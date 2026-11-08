@@ -16,10 +16,17 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+          cache: npm
+      - name: Install dev tooling
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
       - name: Tests
-        run: node --test test/*.test.js
+        run: npm test
       - name: Data validation
-        run: node scripts/validate-data.mjs
+        run: npm run check
       - name: Require npm token
         run: test -n "$NODE_AUTH_TOKEN"
         env:

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 — 2026-11-08
+
+- Added TypeScript/checkJs and oxlint gates.
+- Hardened the runtime header filter and added security/edge tests.
+- Made data validation sync-safe and added a data-sync fixture test and monthly workflow.
+- Added benchmark tooling, governance docs, release/data runbooks, and Gitee release.
+
 ## 0.1.1 — 2026-11-08
 
 - Initial public release (npm staged-publish path).

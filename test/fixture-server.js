@@ -60,6 +60,12 @@ async function handle(req, res) {
     try { parsed = JSON.parse(body) } catch { return send(res, 400, 'bad json') }
     return parsed?.username === 'alice' ? send(res, 200, '{"ok":true}') : send(res, 404, '{"ok":false}')
   }
+  if (pathname.startsWith('/headers/secure/')) {
+    const leaked = req.headers.cookie || req.headers.authorization
+    return !leaked && name === 'alice'
+      ? send(res, 200, 'profile')
+      : send(res, 403, 'unsafe header reached the fixture')
+  }
   if (pathname.startsWith('/headers/')) {
     const language = req.headers['accept-language'] ?? ''
     return language.includes('en-US') && name === 'alice'

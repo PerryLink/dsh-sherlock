@@ -30,16 +30,23 @@ test('both tools expose exact DSH-subset schemas', () => {
 })
 
 test('sherlock_sites lists core and all sets without network', async () => {
+  const coreTotal = data.sites.filter((site) => site.tier === 'core' && !site.excluded && !site.nsfw).length
+  const allTotal = data.sites.filter((site) => !site.excluded && !site.nsfw).length
   const core = await sites.execute({ scope: 'core' })
-  assert.equal(core.total, 41)
-  assert.equal(core.count, 41)
+  assert.equal(core.total, coreTotal)
+  assert.equal(core.count, coreTotal)
   assert.equal(core.truncated, false)
   assert.ok(core.sites.some((site) => site.name === 'GitHub'))
 
   const all = await sites.execute({ scope: 'all' })
-  assert.equal(all.total, 417)
-  assert.equal(all.count, 50)
-  assert.equal(all.truncated, true)
+  assert.equal(all.total, allTotal)
+  assert.equal(all.count, Math.min(50, allTotal))
+  assert.equal(all.truncated, allTotal > 50)
+
+  if (process.env.DSH_TOOLS_PATH) {
+    const mod = await import(process.env.DSH_TOOLS_PATH)
+    assert.deepEqual(mod.validateJsonSchemaValue(sites.output.schema, core, ''), [])
+  }
 })
 
 test('sherlock_sites filters by query and limit', async () => {

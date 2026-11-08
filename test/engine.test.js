@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createEngine, checkUsername, listSites, STATUS } from '../lib/core/engine.js'
+import { createEngine, checkUsername, listSites, assertPublicHttpUrl, STATUS } from '../lib/core/engine.js'
 import { renderCheckResult } from '../lib/core/render.js'
 import { apply } from '../lib/dsh/plugin.js'
 import { startFixtureServer } from './fixture-server.js'
@@ -236,6 +236,46 @@ test('cache keys separate verify on/off so a soft-404 is not reused as claimed',
   assert.equal(second.results[0].status, STATUS.UNRELIABLE)
 })
 
+
+test('production mode rejects private and metadata hosts before fetching', async () => {
+  const site = makeSite({ url: `${server.base}/status/claimed` })
+  const result = await check(site, 'alice', {}, { allowPrivateHosts: false })
+  assert.equal(result.status, STATUS.UNKNOWN)
+  assert.equal(result.evidence.reason, 'config_error')
+  assert.match(result.evidence.message, /private host/i)
+  for (const url of ['http://10.0.0.1/x', 'http://127.0.0.1/x', 'http://169.254.169.254/latest', 'http://100.64.0.1/x', 'http://[::1]/x']) {
+    assert.throws(() => assertPublicHttpUrl(url), /private host/i, url)
+  }
+})
+
+test('unsafe site headers are dropped at runtime', async () => {
+  const site = makeSite({
+    url: `${server.base}/headers/secure/{}`,
+    headers: { cookie: 'secret', authorization: 'Bearer secret', 'accept-language': 'en-US' },
+  })
+  assert.equal((await check(site)).status, STATUS.CLAIMED)
+})
+
+test('external abort cancels an in-flight check instead of returning a result', async () => {
+  const site = makeSite({ url: `${server.base}/slow`, method: 'GET' })
+  const engine = engineFor([site], { timeoutMs: 5000 })
+  const controller = new AbortController()
+  const pending = checkUsername(engine, 'alice', { scope: 'core', sites: [site.name], verify: false, signal: controller.signal })
+  setTimeout(() => controller.abort(new Error('client abort')), 50)
+  await assert.rejects(pending, /client abort|aborted/i)
+})
+
+test('array errorType combines message and status_code outcomes', async () => {
+  const site = makeSite({
+    url: `${server.base}/message/known/{}`,
+    method: 'GET',
+    detectors: ['message', 'status_code'],
+    errorMessages: ['This account does not exist'],
+  })
+  assert.equal((await check(site, 'alice')).status, STATUS.CLAIMED)
+  assert.equal((await check(site, 'bob')).status, STATUS.AVAILABLE)
+})
+
 test('plugin registers two tools and an optional skill, and returns a JSON-safe value', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-plugin-'))
   const manifestPath = path.join(dir, 'sites.json')
@@ -267,6 +307,13 @@ test('plugin registers two tools and an optional skill, and returns a JSON-safe 
   if (process.env.DSH_TOOLS_PATH) {
     const mod = await import(process.env.DSH_TOOLS_PATH)
     assert.deepEqual(mod.validateJsonSchemaValue(tools.get('sherlock_check').output.schema, value, ''), [])
+  }
+
+  const withAvailable = await tools.get('sherlock_check').execute({ username: 'alice', scope: 'core', verify: false, include_available: true }, exec)
+  assert.ok(Array.isArray(withAvailable.available))
+  if (process.env.DSH_TOOLS_PATH) {
+    const mod = await import(process.env.DSH_TOOLS_PATH)
+    assert.deepEqual(mod.validateJsonSchemaValue(tools.get('sherlock_check').output.schema, withAvailable, ''), [])
   }
 
   const rendered = tools.get('sherlock_check').output.render({ username: 'alice' }, value)

@@ -7,17 +7,23 @@
  *   node scripts/sync-sherlock.mjs --ref <40-hex-sha>
  */
 import { createHash } from 'node:crypto'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { normalizeRegex } from '../lib/core/manifest.js'
 
 const args = process.argv.slice(2)
-const refIndex = args.indexOf('--ref')
-const ref = refIndex >= 0 ? args[refIndex + 1] : 'master'
-if (!/^[0-9a-f]{40}$/i.test(ref ?? '')) throw new Error('usage: node scripts/sync-sherlock.mjs --ref <40-hex-sha>')
+const option = (name, fallback) => {
+  const index = args.indexOf(name)
+  return index >= 0 ? args[index + 1] : fallback
+}
+const ref = option('--ref')
+if (!/^[0-9a-f]{40}$/i.test(ref ?? '')) throw new Error('usage: node scripts/sync-sherlock.mjs --ref <40-hex-sha> [--data-url URL] [--exclusions-url URL] [--out-dir DIR]')
 
 const BASE = 'https://raw.githubusercontent.com/sherlock-project/sherlock'
-const dataUrl = `${BASE}/${ref}/sherlock_project/resources/data.json`
-const exclusionsUrl = `${BASE}/refs/heads/exclusions/false_positive_exclusions.txt`
+const dataUrl = option('--data-url', `${BASE}/${ref}/sherlock_project/resources/data.json`)
+const exclusionsUrl = option('--exclusions-url', `${BASE}/refs/heads/exclusions/false_positive_exclusions.txt`)
+const outDir = option('--out-dir', 'data')
+await mkdir(outDir, { recursive: true })
 const ALLOWED_HEADERS = /^(accept|accept-language|content-type|user-agent|referer|origin|sec-fetch-(mode|site|dest))$/i
 const LOW_DEFAULT = new Set(['Instagram', 'Facebook', 'Twitter', 'TikTok', 'LinkedIn', 'Threads', 'Discord', 'Reddit', 'YouTube', 'Twitch', 'Medium', 'Dribbble'])
 
@@ -27,9 +33,10 @@ delete raw.$schema
 const exclusions = exclusionsText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
 const exclusionSet = new Set(exclusions.map((name) => name.toLowerCase()))
 
-const oldCuration = await readOptionalJson('data/curation.json')
+const oldCuration = await readOptionalJson(join(outDir, 'curation.json'))
 const coreSet = new Set((oldCuration?.core ?? []).map((name) => name.toLowerCase()))
-const lowSet = new Set((oldCuration?.lowReliability ?? LOW_DEFAULT).map((name) => name.toLowerCase()))
+const lowList = Array.isArray(oldCuration?.lowReliability) ? oldCuration.lowReliability : [...LOW_DEFAULT]
+const lowSet = new Set(lowList.map((name) => name.toLowerCase()))
 
 const sites = []
 for (const [name, site] of Object.entries(raw)) {
@@ -104,10 +111,10 @@ const curation = {
   notes: oldCuration?.notes ?? {},
 }
 
-await writeFile('data/sites.json', `${JSON.stringify({ schemaVersion: 1, source, sites }, null, 2)}\n`)
-await writeFile('data/SOURCE.json', `${JSON.stringify(source, null, 2)}\n`)
-await writeFile('data/exclusions.txt', `${exclusions.join('\n')}\n`)
-await writeFile('data/curation.json', `${JSON.stringify(curation, null, 2)}\n`)
+await writeFile(join(outDir, 'sites.json'), `${JSON.stringify({ schemaVersion: 1, source, sites }, null, 2)}\n`)
+await writeFile(join(outDir, 'SOURCE.json'), `${JSON.stringify(source, null, 2)}\n`)
+await writeFile(join(outDir, 'exclusions.txt'), `${exclusions.join('\n')}\n`)
+await writeFile(join(outDir, 'curation.json'), `${JSON.stringify(curation, null, 2)}\n`)
 console.log(`synced ${sites.length} sites (core ${source.core}, effective ${effectiveDefault}) from ${ref}`)
 
 function asArray(value) {
@@ -135,7 +142,7 @@ function hostKey(urlProbe, url, urlMain) {
 async function fetchText(url) {
   const response = await fetch(url, { headers: { 'user-agent': 'dsh-sherlock-sync/0.1' } })
   if (!response.ok) throw new Error(`fetch ${url} failed: HTTP ${response.status}`)
-  return response.text()
+  return await response.text()
 }
 
 async function readOptionalJson(path) {

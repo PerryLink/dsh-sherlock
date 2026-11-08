@@ -1,5 +1,7 @@
 # dsh-sherlock
 
+[![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
+
 Sherlock-compatible public username checks for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH).
 
 It turns the [Sherlock](https://github.com/sherlock-project/sherlock) site manifest into a DSH-native bundle with two tools and an on-demand skill. It is deliberately **not** a 1:1 port of the Python CLI: blocked, unknown, and unreliable results stay separate from claimed and available ones.
@@ -120,16 +122,34 @@ The data is pinned so installs are reproducible. Update it with `scripts/sync-sh
 Requires Node 24.9+.
 
 ```bash
+npm ci
+npm run typecheck        # tsc --checkJs, no emit
+npm run lint             # oxlint
 npm test                 # node --test, fixture server only
 npm run check            # data-pack validation
 npm run pack:check       # npm pack --dry-run
+npm run gate             # all of the above
 ```
 
-Tests cover status codes, messages, response URLs, WAF, redirects, POST payloads, custom headers, timeouts, body caps, exclusions, negative controls, caching, tool schemas, and data integrity. The real DSH schema validator can be used with:
+Tests cover status codes, messages, response URLs, WAF, redirects, POST payloads, custom headers, timeouts, body caps, exclusions, negative controls, caching, private-host rejection, abort cancellation, array detectors, tool schemas, and data integrity. The real DSH schema validator can be used with:
 
 ```bash
 DSH_TOOLS_PATH=/path/to/dsh-tools/lib/index.js npm test
 ```
+
+Live benchmark (network requests; not part of CI):
+
+```bash
+node scripts/benchmark.mjs --username blue --scope core --verify=false
+```
+
+## More documentation
+
+- [Data pack and sync runbook](docs/DATA.md)
+- [Release runbook](docs/RELEASING.md)
+- [Benchmark notes](docs/BENCHMARK.md)
+- [Security policy](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 

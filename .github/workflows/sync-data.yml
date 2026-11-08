@@ -1,0 +1,76 @@
+name: Sync Sherlock data
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Upstream 40-hex commit (blank = current master)'
+        required: false
+        type: string
+  schedule:
+    - cron: '0 5 1 * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-sherlock-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dev tooling
+        run: npm ci
+      - name: Resolve upstream ref
+        id: ref
+        run: |
+          REF="${{ inputs.ref }}"
+          if [ -z "$REF" ]; then
+            REF=$(git ls-remote https://github.com/sherlock-project/sherlock refs/heads/master | cut -f1)
+          fi
+          if ! printf '%s' "$REF" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "invalid upstream ref: $REF" >&2
+            exit 1
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+      - name: Sync manifest
+        run: node scripts/sync-sherlock.mjs --ref '${{ steps.ref.outputs.ref }}'
+      - name: Validate data
+        run: npm run check
+      - name: Tests
+        run: npm test
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet -- data/sites.json data/exclusions.txt data/curation.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open data PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          BRANCH="data/sync-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git add data
+          git commit -m "data: sync Sherlock manifest at ${{ steps.ref.outputs.ref }}"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "data: sync Sherlock manifest" \
+            --body "Automated sync from sherlock-project/sherlock@${{ steps.ref.outputs.ref }}.
+
+          Review the data diff and the CI result before merging. Do not auto-merge."

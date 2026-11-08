@@ -1,5 +1,7 @@
 # dsh-sherlock
 
+[![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
+
 面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 Sherlock 兼容用户名检查插件。
 
 它把 [Sherlock](https://github.com/sherlock-project/sherlock) 的站点清单变成一个 DSH 原生 bundle：两个工具 + 一个按需加载的 skill。它不是 Python CLI 的 1:1 移植——**被拦截、未知、不可信**会和已占用、可用明确分开。
@@ -120,16 +122,34 @@ await tools.sherlock_check({ username: 'alice', scope: 'core' })
 需要 Node 24.9+。
 
 ```bash
+npm ci
+npm run typecheck        # tsc --checkJs，不产物
+npm run lint             # oxlint
 npm test                 # node --test，只用本地 fixture
 npm run check            # 数据校验
 npm run pack:check       # npm pack --dry-run
+npm run gate             # 以上全部
 ```
 
-测试覆盖状态码、message、response_url、WAF、重定向、POST payload、自定义 header、超时、body cap、排除项、负样本、缓存、工具 schema 和数据完整性。真实 DSH schema 校验：
+测试覆盖状态码、message、response_url、WAF、重定向、POST payload、自定义 header、超时、body cap、排除项、负样本、缓存、私有地址拒绝、abort 取消、数组检测器、工具 schema 和数据完整性。真实 DSH schema 校验：
 
 ```bash
 DSH_TOOLS_PATH=/path/to/dsh-tools/lib/index.js npm test
 ```
+
+Live benchmark（会发真实网络请求，不属于 CI）：
+
+```bash
+node scripts/benchmark.mjs --username blue --scope core --verify=false
+```
+
+## 更多文档
+
+- [数据包与同步 runbook](docs/DATA.md)
+- [发布 runbook](docs/RELEASING.md)
+- [Benchmark 记录](docs/BENCHMARK.md)
+- [安全策略](SECURITY.md)
+- [贡献指南](CONTRIBUTING.md)
 
 ## 许可
 
