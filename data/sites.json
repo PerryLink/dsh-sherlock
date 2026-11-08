@@ -3803,7 +3803,7 @@
         "Page not found"
       ],
       "errorUrl": null,
-      "regexCheck": "^[\\w-]{,34}$",
+      "regexCheck": "^[\\w-]{0,34}$",
       "method": "GET",
       "headers": {},
       "payload": null,
@@ -4855,7 +4855,7 @@
       "tier": "extended",
       "reliability": "high",
       "excluded": false,
-      "hostKey": "linux.org.ru",
+      "hostKey": "www.linux.org.ru",
       "sampleUsername": "red"
     },
     {

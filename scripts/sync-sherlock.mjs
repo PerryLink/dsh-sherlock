@@ -34,6 +34,7 @@ const exclusions = exclusionsText.split(/\r?\n/).map((line) => line.trim()).filt
 const exclusionSet = new Set(exclusions.map((name) => name.toLowerCase()))
 
 const oldCuration = await readOptionalJson(join(outDir, 'curation.json'))
+const oldData = await readOptionalJson(join(outDir, 'sites.json'))
 const coreSet = new Set((oldCuration?.core ?? []).map((name) => name.toLowerCase()))
 const lowList = Array.isArray(oldCuration?.lowReliability) ? oldCuration.lowReliability : [...LOW_DEFAULT]
 const lowSet = new Set(lowList.map((name) => name.toLowerCase()))
@@ -55,8 +56,11 @@ for (const [name, site] of Object.entries(raw)) {
   const errorCodes = asArray(site.errorCode).filter((value) => Number.isInteger(value))
   const errorMessages = asArray(site.errorMsg).filter((value) => typeof value === 'string' && value.length > 0)
   const method = site.request_method ?? (detectors.length === 1 && detectors[0] === 'status_code' ? 'HEAD' : 'GET')
-  const reliability = lowSet.has(name.toLowerCase()) ? 'low'
-    : (site.urlProbe || detectors.includes('message') || detectors.includes('response_url') || method !== 'GET' || Object.keys(headers).length > 0) ? 'medium'
+  const hasNonUserAgentHeader = Object.keys(headers).length > 0
+    && !Object.keys(site.headers ?? {}).some((key) => key.toLowerCase() === 'user-agent')
+  const reliability = lowSet.has(name.toLowerCase()) || site.isNSFW ? 'low'
+    : (site.urlProbe || detectors.includes('message') || detectors.includes('response_url')
+      || (site.request_method !== undefined && site.request_method !== 'GET') || hasNonUserAgentHeader) ? 'medium'
       : 'high'
   sites.push({
     name,
@@ -91,7 +95,6 @@ const effectiveDefault = sites.filter((site) => !site.excluded && !site.nsfw).le
 const source = {
   project: 'sherlock-project/sherlock',
   upstreamCommit: ref,
-  upstreamRef: ref,
   fetchedAt: new Date().toISOString(),
   rawSha256: createHash('sha256').update(rawText).digest('hex'),
   rawSites: Object.keys(raw).length,
@@ -103,6 +106,12 @@ const source = {
   license: 'MIT',
   licenseFile: 'data/SHERLOCK-LICENSE',
 }
+if (oldData?.source?.rawSha256 === source.rawSha256
+  && oldData?.source?.upstreamCommit === source.upstreamCommit
+  && typeof oldData?.source?.fetchedAt === 'string') {
+  source.fetchedAt = oldData.source.fetchedAt
+}
+
 const curation = {
   schemaVersion: 1,
   lastReviewed: new Date().toISOString().slice(0, 10),

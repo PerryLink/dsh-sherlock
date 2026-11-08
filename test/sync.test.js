@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
@@ -33,6 +33,13 @@ test('sync script normalizes a fixture manifest and the result passes data valid
   const base = `http://127.0.0.1:${server.address().port}`
   const outDir = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-sync-'))
   try {
+    await writeFile(path.join(outDir, 'curation.json'), JSON.stringify({
+      schemaVersion: 1,
+      lastReviewed: '2026-11-08',
+      core: ['Site A'],
+      lowReliability: ['Site B'],
+      notes: {},
+    }))
     const sync = await run(process.execPath, [
       'scripts/sync-sherlock.mjs',
       '--ref', REF,
@@ -49,10 +56,13 @@ test('sync script normalizes a fixture manifest and the result passes data valid
     assert.equal(source.excluded, 1)
     assert.equal(source.nsfw, 1)
     assert.equal(source.effectiveDefault, 1)
-    assert.equal(source.core, 0)
+    assert.equal(source.core, 1)
+    assert.equal(sites.sites.find((site) => site.name === 'Site A').tier, 'core')
     assert.equal(sites.sites.find((site) => site.name === 'Site B').excluded, true)
+    assert.equal(sites.sites.find((site) => site.name === 'Site B').reliability, 'low')
     assert.equal(sites.sites.find((site) => site.name === 'Site C').nsfw, true)
-    assert.deepEqual(curation.core, [])
+    assert.deepEqual(curation.core, ['Site A'])
+    assert.deepEqual(curation.lowReliability, ['Site B', 'Site C'])
     const validate = spawnSync(process.execPath, ['scripts/validate-data.mjs', '--data-dir', outDir], { cwd: root, encoding: 'utf8', timeout: 30000 })
     assert.equal(validate.status, 0, validate.stderr)
   } finally {
