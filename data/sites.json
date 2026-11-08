@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": {
     "project": "sherlock-project/sherlock",
-    "upstreamCommit": "c588d7c8b476df9f9c84912a05d1430fb8cdcdae",
-    "fetchedAt": "2026-11-08T10:29:51.582Z",
-    "rawSha256": "3fdfc6694c5cd99798881215554b09e617c6d5284a6219fae309882566a9fb30",
+    "upstreamCommit": "ed0865363fb2f8ed52c9dcb7926dead61267f099",
+    "fetchedAt": "2026-11-08T13:25:50.126Z",
+    "rawSha256": "8c458427750f1b5a1aac5ceaf27eeae5c3c84560a446121439cc1cc29ecef15e",
     "rawSites": 481,
     "exportedSites": 481,
     "excluded": 47,
@@ -2093,25 +2093,27 @@
     },
     {
       "name": "Cracked Forum",
-      "urlMain": "https://cracked.ax/",
-      "url": "https://cracked.ax/{}",
+      "urlMain": "https://cracked.sh/",
+      "url": "https://cracked.sh/{}",
       "urlProbe": null,
       "detectors": [
-        "status_code"
+        "message"
       ],
       "errorCodes": [],
-      "errorMessages": [],
+      "errorMessages": [
+        "The member you specified is either invalid or doesn't exist"
+      ],
       "errorUrl": null,
       "regexCheck": null,
-      "method": "HEAD",
+      "method": "GET",
       "headers": {},
       "payload": null,
       "nsfw": false,
       "tags": [],
       "tier": "extended",
-      "reliability": "high",
+      "reliability": "medium",
       "excluded": false,
-      "hostKey": "cracked.ax",
+      "hostKey": "cracked.sh",
       "sampleUsername": "Blue"
     },
     {
@@ -9754,19 +9756,17 @@
     },
     {
       "name": "akniga",
-      "urlMain": "https://akniga.org/",
+      "urlMain": "https://akniga.org/profile/blue/",
       "url": "https://akniga.org/profile/{}",
       "urlProbe": null,
       "detectors": [
         "status_code"
       ],
-      "errorCodes": [
-        404
-      ],
+      "errorCodes": [],
       "errorMessages": [],
       "errorUrl": null,
       "regexCheck": null,
-      "method": "GET",
+      "method": "HEAD",
       "headers": {},
       "payload": null,
       "nsfw": false,
