@@ -1,0 +1,11 @@
+dsh-sherlock
+Copyright 2026 PerryLink
+
+This product includes site manifest data derived from the Sherlock project
+(https://github.com/sherlock-project/sherlock), which is licensed under the
+MIT License. The upstream license text is reproduced in
+data/SHERLOCK-LICENSE.
+
+dsh-sherlock is an independent integration and is not affiliated with or
+endorsed by the Sherlock project. The Sherlock name is used only to describe
+compatibility with its site-manifest format.

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Sherlock 用户名检查",
+    "description": "基于固定 Sherlock 站点清单检查公开用户名，明确区分已占用、被拦截、未知和不可信结果。"
+  }
+}

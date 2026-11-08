@@ -1,0 +1,63 @@
+{
+  "name": "dsh-sherlock",
+  "version": "0.1.0",
+  "description": "Sherlock-compatible public username checks for DeepSeek Harness, with blocked/unknown results kept separate.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "data",
+    "skills",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.3 <0.4.0",
+    "node": ">=24.9.0 <25"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/validate-data.mjs",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "node scripts/validate-data.mjs"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "sherlock",
+    "osint",
+    "username",
+    "social-media",
+    "reconnaissance"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PerryLink/dsh-sherlock.git"
+  },
+  "homepage": "https://github.com/PerryLink/dsh-sherlock#readme",
+  "bugs": {
+    "url": "https://github.com/PerryLink/dsh-sherlock/issues"
+  },
+  "icon": "./icon.svg"
+}

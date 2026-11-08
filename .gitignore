@@ -1,0 +1,7 @@
+node_modules/
+upstream/
+coverage/
+*.tgz
+.npmrc
+.DS_Store
+test/.tmp/
