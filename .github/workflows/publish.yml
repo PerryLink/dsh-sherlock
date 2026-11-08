@@ -1,9 +1,7 @@
 name: Publish npm
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,6 +20,10 @@ jobs:
         run: node --test test/*.test.js
       - name: Data validation
         run: node scripts/validate-data.mjs
+      - name: Require npm token
+        run: test -n "$NODE_AUTH_TOKEN"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish
         run: npm publish --provenance --access public
         env:
