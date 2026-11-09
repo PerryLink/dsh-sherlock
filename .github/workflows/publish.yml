@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
+          # No `registry-url`: it writes an empty _authToken into .npmrc, which
+          # prevents npm from performing the OIDC trusted-publishing exchange.
           cache: npm
       - name: Install dev tooling
         run: npm ci
@@ -27,11 +28,9 @@ jobs:
         run: npm test
       - name: Data validation
         run: npm run check
-      - name: Require npm token
-        run: test -n "$NODE_AUTH_TOKEN"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
       - name: Publish
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
