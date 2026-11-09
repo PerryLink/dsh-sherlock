@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 — 2026-11-09 (deprecated, not the release line)
+
+- Workaround release published while the 0.1.4 tarball was still propagating; the
+  registry later served 0.1.4 normally, so 0.1.5 is deprecated on npm.
+- Use 0.1.4. No runtime behavior change.
+
 ## 0.1.4 — 2026-11-09
 
 - Re-release from the 0.1.3 tree to attach SLSA provenance via npm trusted publishing.
