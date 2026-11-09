@@ -1,6 +1,6 @@
 {
   "name": "dsh-sherlock",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Sherlock-compatible public username checks for DeepSeek Harness, with blocked/unknown results kept separate.",
   "type": "module",
   "main": "index.js",

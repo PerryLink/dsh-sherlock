@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 — 2026-11-09
+
+- Re-release from the 0.1.3 tree to attach SLSA provenance via npm trusted publishing.
+  No runtime behavior change.
+
 ## 0.1.3 — 2026-11-09
 
 - Rebuilt the npm tarball from the current `main` so the packaged docs, locale detail metadata, and
