@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 — 2026-11-09
+
+- Added source adapters: `chrono_feed` (RSS/Atom), `chrono_gdelt` (GDELT DOC 2.0), and
+  `chrono_archive` (Wayback CDX, optional/fallback-aware).
+- Added `chrono_collect` for up to 50 URLs, using DSH jobs when available and a foreground fallback.
+- Added `chrono_watch` for durable local watches through DSH schedule.
+- Added the human `/chrono` command and a self-contained `report.html` timeline/conflict board.
+- The report now has `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and
+  `report.manifest.json`; `presentFiles` recommends four.
+
+
 ## 0.2.0 — 2026-11-09
 
 - Added the temporal evidence workbench: `chrono_case`, `chrono_ingest`, `chrono_assert`,

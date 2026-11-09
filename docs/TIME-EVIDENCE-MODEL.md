@@ -92,9 +92,10 @@ A negative statement is only allowed with a coverage statement:
 
 ## 6. Report contract
 
-Four files, delivered through DSH `present`:
+Five artifacts; the first four are the recommended `present` set:
 
 ```text
+report.html            self-contained timeline/conflict board (no server, no external assets)
 report.md              human-readable, with limitations and what would change the conclusion
 timeline.csv           interval/precision/timezone/role/T-S-C-E/citations
 sources.csv            source cards with snapshot hashes and access status

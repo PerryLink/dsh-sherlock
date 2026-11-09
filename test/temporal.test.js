@@ -11,6 +11,8 @@ import { analyzeCase } from '../lib/temporal/analyze.js'
 import { generateReport } from '../lib/temporal/report.js'
 import { addDateAssertion, addEvent, addSource, createCase } from '../lib/temporal/store.js'
 import { createTemporalTools } from '../lib/dsh/temporal-tools.js'
+import { createSourceTools } from '../lib/dsh/source-tools.js'
+import { registerCommand } from '../lib/dsh/command.js'
 
 test('date parser keeps precision, intervals, and timezone provenance', () => {
   const day = parseDate('2024-03-15')
@@ -86,13 +88,13 @@ test('store, conflict analysis, and report stay deterministic and non-verdict', 
     assert.equal(analysis.coverage.domains.length, 2)
 
     const report = await generateReport(root, record.caseId, { audience: 'editor' })
-    assert.equal(report.files.length, 4)
+    assert.equal(report.files.length, 5)
     const reportText = await readFile(path.join(root, 'cases', record.caseId, 'reports', report.reportId, 'report.md'), 'utf8')
     assert.match(reportText, /不是真伪裁决/)
     assert.doesNotMatch(reportText, /<html/i)
     const manifest = JSON.parse(await readFile(path.join(root, 'cases', record.caseId, 'reports', report.reportId, 'report.manifest.json'), 'utf8'))
     assert.equal(manifest.caseId, record.caseId)
-    assert.equal(manifest.files.length, 3)
+    assert.equal(manifest.files.length, 4)
     assert.equal(manifest.sources.length, 2)
   } finally {
     await rm(root, { recursive: true, force: true })
@@ -144,13 +146,46 @@ test('temporal tools record, analyze, and report a date conflict', async () => {
     assert.equal(analysis.timeline.length, 1)
     assert.equal(analysis.timeline[0].label, 'Factory closed')
     const report = await tools.find((tool) => tool.name === 'chrono_report').execute({ case_id: created.caseId, audience: 'editor' })
-    assert.equal(report.files.length, 4)
+    assert.equal(report.files.length, 5)
     if (process.env.DSH_TOOLS_PATH) {
       const mod = await import(process.env.DSH_TOOLS_PATH)
       assert.deepEqual(mod.validateJsonSchemaValue(tools.find((tool) => tool.name === 'chrono_assert').output.schema, asserted, ''), [])
       assert.deepEqual(mod.validateJsonSchemaValue(tools.find((tool) => tool.name === 'chrono_analyze').output.schema, analysis, ''), [])
       assert.deepEqual(mod.validateJsonSchemaValue(tools.find((tool) => tool.name === 'chrono_report').output.schema, report, ''), [])
     }
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('source tool fallback and /chrono command work without external services', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-source-tools-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    const created = await createCase(root, { title: 'Command case', question: 'Question?' })
+    const tools = createSourceTools(config, { get: () => undefined })
+    const collect = await tools.find((tool) => tool.name === 'chrono_collect').execute({ case_id: created.caseId, urls: ['http://127.0.0.1:1/private'] }, { signal: new AbortController().signal })
+    assert.equal(collect.mode, 'foreground')
+    assert.ok(collect.warnings.length)
+    assert.deepEqual(collect.sources, [])
+    if (process.env.DSH_TOOLS_PATH) {
+      const mod = await import(process.env.DSH_TOOLS_PATH)
+      assert.deepEqual(mod.validateJsonSchemaValue(tools.find((tool) => tool.name === 'chrono_collect').output.schema, collect, ''), [])
+    }
+    await assert.rejects(tools.find((tool) => tool.name === 'chrono_watch').execute({ action: 'create', case_id: created.caseId, rrule: 'RRULE:FREQ=DAILY' }, { agent: { session: { id: 'session' } } }), /schedule service unavailable/)
+
+    let handler
+    registerCommand({
+      inject(_deps, callback) { callback({ commands: { register(definition) { handler = definition.handler; return () => {} } } }) },
+      logger: { warn() {} },
+    }, config)
+    const listed = await handler({ rawInput: 'list' })
+    assert.equal(listed.kind, 'success')
+    assert.match(listed.text, /Command case/)
+    const status = await handler({ rawInput: `status ${created.caseId}` })
+    assert.equal(status.kind, 'success')
+    assert.match(status.text, /Command case/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

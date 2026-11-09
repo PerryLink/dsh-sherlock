@@ -1,7 +1,7 @@
 # dsh-sherlock
 
 面向 DeepSeek Harness 的时序证据工作台。把公开 URL 变成一份本地可复核的时间线：冻结快照、
-分离时间角色、日期冲突、缺口、覆盖范围，以及四件套报告。它不建站、不查人、不裁决真假。
+分离时间角色、日期冲突、缺口、覆盖范围，以及自包含 HTML 报告 + Markdown/CSV + manifest。它不建站、不查人、不裁决真假。
 
 ## 安装
 
@@ -16,7 +16,7 @@ dsh plugin --profile <profile> add dsh-sherlock
 2. `chrono_ingest`：抓取 1–10 个公开 URL，保存文本快照和 SHA-256。
 3. `chrono_assert`：记录事件和原始日期断言，必须选角色。
 4. `chrono_analyze`：查看冲突、T-S-C-E 证据、时间线、缺口、覆盖。
-5. `chrono_report`：生成 `report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`，
+5. `chrono_report`：生成 `report.html`、`report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`，
    用 DSH `present` 展示。
 
 `chrono-investigation` skill 承载方法论。早期 `sherlock_check` / `sherlock_sites` 用户名工具保留为

@@ -294,7 +294,7 @@ test('plugin registers two tools and an optional skill, and returns a JSON-safe 
   }
   apply(ctx, { manifestPath, allowPrivateHosts: true, perHostDelayMs: 0, cacheTtlMs: 0 })
 
-  assert.deepEqual([...tools.keys()].sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_ingest', 'chrono_report', 'chrono_search', 'sherlock_check', 'sherlock_sites'])
+  assert.deepEqual([...tools.keys()].sort(), ['chrono_analyze', 'chrono_archive', 'chrono_assert', 'chrono_case', 'chrono_collect', 'chrono_feed', 'chrono_gdelt', 'chrono_ingest', 'chrono_report', 'chrono_search', 'chrono_watch', 'sherlock_check', 'sherlock_sites'])
   assert.deepEqual(skills.map((entry) => entry.name).sort(), ['chrono-investigation', 'sherlock-osint'])
   const sherlockSkill = skills.find((entry) => entry.name === 'sherlock-osint')
   assert.match(sherlockSkill.content, /Sherlock OSINT workflow/)

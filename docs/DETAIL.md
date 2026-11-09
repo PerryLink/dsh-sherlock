@@ -1,8 +1,8 @@
 # dsh-sherlock
 
 A temporal evidence workbench for DeepSeek Harness. It turns public URLs into a local, reviewable
-timeline: frozen snapshots, separated time roles, date conflicts, gaps, coverage, and a four-file
-report. It does not host a website, search for people, or decide whether a claim is true.
+timeline: frozen snapshots, separated time roles, date conflicts, gaps, coverage, and a
+self-contained HTML report plus Markdown/CSV and a manifest. It does not host a website, search for people, or decide whether a claim is true.
 
 ## Install
 
@@ -17,8 +17,8 @@ dsh plugin --profile <profile> add dsh-sherlock
 2. `chrono_ingest` — freeze 1–10 public URLs with text snapshots and SHA-256.
 3. `chrono_assert` — record an event and raw date assertions with a role.
 4. `chrono_analyze` — read conflicts, T-S-C-E evidence, timeline, gaps, and coverage.
-5. `chrono_report` — write `report.md`, `timeline.csv`, `sources.csv`, and
-   `report.manifest.json`; present them with DSH `present`.
+5. `chrono_report` — write `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and
+   `report.manifest.json`; present the four `presentFiles` with DSH `present`.
 
 The `chrono-investigation` skill carries the method. The earlier `sherlock_check` / `sherlock_sites`
 username tools remain as legacy compatibility.

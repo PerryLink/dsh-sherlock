@@ -10,13 +10,13 @@ It does **not** build or host a website. It does **not** search for people. It t
 
 ## What it does
 
-`chrono_case` → `chrono_ingest` → `chrono_assert` → `chrono_analyze` → `chrono_report`
+`chrono_case` → `chrono_ingest` / `chrono_feed` / `chrono_gdelt` / `chrono_archive` → `chrono_assert` → `chrono_analyze` → `chrono_report`
 
 - **chrono_case** creates/opens a local case.
 - **chrono_ingest** fetches 1–10 public URLs, stores text snapshots and SHA-256, and extracts declared dates.
 - **chrono_assert** records an event and its raw date assertions with a role (`event`, `announcement`, `effective`, `publication`, `update`, `correction`, `retraction`, `access`, `deadline`, `period`).
 - **chrono_analyze** runs deterministic conflict/evidence/timeline/gap/coverage analysis.
-- **chrono_report** writes `report.md`, `timeline.csv`, `sources.csv`, and `report.manifest.json`.
+- **chrono_report** writes a self-contained `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and `report.manifest.json`; `presentFiles` recommends four.
 - The `chrono-investigation` skill carries the method: five clocks, T-S-C-E, conflict handling, uncertainty language.
 
 ### Five clocks (never collapsed into one "date")
@@ -89,7 +89,7 @@ await tools.chrono_analyze({ case_id: c.caseId, action: 'check' })
 await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ```
 
-The report tools write local files. The model should call DSH `present` with those four files; the plugin does not upload them.
+The report tool writes local files, including a self-contained `report.html` timeline/conflict board. The model should call DSH `present` with the four `presentFiles` (`report.html`, `report.md`, `timeline.csv`, `report.manifest.json`); `sources.csv` remains in the case. The plugin does not upload them. A human can use `/chrono list`, `/chrono status <caseId>`, or `/chrono report <caseId>`.
 
 ## Tools
 
@@ -98,9 +98,14 @@ The report tools write local files. The model should call DSH `present` with tho
 | `chrono_case` | create/open/list a local case |
 | `chrono_search` | optional discovery via DSH search; returns URLs, not evidence |
 | `chrono_ingest` | freeze public URL snapshots + metadata |
+| `chrono_feed` | RSS/Atom entries + optional ingest |
+| `chrono_gdelt` | GDELT DOC 2.0 news discovery + optional ingest |
+| `chrono_archive` | Wayback CDX captures; optional/fallback-aware |
+| `chrono_collect` | up to 50 URLs; DSH job or foreground fallback |
+| `chrono_watch` | durable local watch via DSH schedule |
 | `chrono_assert` | record events and raw date assertions |
 | `chrono_analyze` | conflicts, evidence vectors, timeline, gaps, coverage |
-| `chrono_report` | four-file report + manifest hashes |
+| `chrono_report` | visual `report.html` + Markdown/CSV + manifest hashes |
 | `sherlock_check` | **legacy** username check; kept for existing users |
 | `sherlock_sites` | **legacy** site list |
 
@@ -114,6 +119,7 @@ Default root: `.dsh-sherlock/chrono` under the host working directory.
 cases/<caseId>/
   case.json
   sources.jsonl
+  watch.json
   events.jsonl
   dates.jsonl
   snapshots/<snapshotId>.txt

@@ -10,10 +10,12 @@
 
 ## 工作流
 
-`chrono_case` → `chrono_ingest` → `chrono_assert` → `chrono_analyze` → `chrono_report`
+`chrono_case` → `chrono_ingest` / `chrono_feed` / `chrono_gdelt` / `chrono_archive` → `chrono_assert` → `chrono_analyze` → `chrono_report`
 
 - **chrono_case**：建立/打开本地案卷。
 - **chrono_ingest**：抓取 1–10 个公开 URL，保存文本快照和 SHA-256，抽取发布者声明的日期。
+- **chrono_feed**：RSS/Atom；**chrono_gdelt**：GDELT 新闻窗口；**chrono_archive**：Wayback CDX（可达时）。这些是发现源，本身不是证据。
+- **chrono_collect**：最多 50 URL，优先 DSH job，失败回退前台；**chrono_watch**：通过 DSH schedule 建立持久观察。
 - **chrono_assert**：记录事件和原始日期断言，必须选角色（`event`/`announcement`/`effective`/`publication`/`update`/`correction`/`retraction`/`access`/`deadline`/`period`）。
 - **chrono_analyze**：确定性的冲突/证据/时间线/缺口/覆盖分析。
 - **chrono_report**：生成 `report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`。
@@ -82,7 +84,7 @@ await tools.chrono_analyze({ case_id: c.caseId, action: 'check' })
 await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ```
 
-报告工具只写本地文件；模型应再调用 DSH `present` 展示四个文件，插件不上传。
+报告工具只写本地文件，包含自包含的 `report.html` 时间线/冲突板。模型应调用 DSH `present` 展示 `presentFiles` 四个文件；`sources.csv` 留在案卷。插件不上传。人类可用 `/chrono list`、`/chrono status <caseId>`、`/chrono report <caseId>`。
 
 ## 工具
 
@@ -91,9 +93,14 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 | `chrono_case` | 建立/打开/列出本地案卷 |
 | `chrono_search` | 可选：通过 DSH 搜索发现 URL；结果不是证据 |
 | `chrono_ingest` | 冻结公开 URL 快照与元数据 |
+| `chrono_feed` | RSS/Atom 条目 + 可选入库 |
+| `chrono_gdelt` | GDELT DOC 2.0 新闻发现 + 可选入库 |
+| `chrono_archive` | Wayback CDX 捕获；可选/可降级 |
+| `chrono_collect` | 最多 50 URL；DSH job 或前台回退 |
+| `chrono_watch` | 通过 DSH schedule 的持久观察 |
 | `chrono_assert` | 记录事件和原始日期断言 |
 | `chrono_analyze` | 冲突、证据向量、时间线、缺口、覆盖 |
-| `chrono_report` | 四件套报告 + manifest 哈希 |
+| `chrono_report` | 可视化 `report.html` + Markdown/CSV + manifest 哈希 |
 | `sherlock_check` | **legacy** 用户名检查，保留兼容 |
 | `sherlock_sites` | **legacy** 站点列表 |
 
