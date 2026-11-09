@@ -90,6 +90,10 @@ await tools.chrono_analyze({ case_id: c.caseId, action: 'check' })
 await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ```
 
+Run `npm run benchmark:temporal` for the local temporal benchmark (no network).
+
+Reports support `redaction: internal | client | public | legal`; PII in labels, claims, titles and query logs is redacted, and `public` only renders high/medium-band rows. `chrono_index` lists/filters local cases without a hosted database.
+
 The report tool writes local files, including a self-contained `report.html` timeline/conflict board. The model should call DSH `present` with the four `presentFiles` (`report.html`, `report.md`, `timeline.csv`, `report.manifest.json`); `sources.csv` remains in the case. The plugin does not upload them. A human can use `/chrono list`, `/chrono status <caseId>`, or `/chrono report <caseId>`.
 
 ## Tools
@@ -98,7 +102,9 @@ The report tool writes local files, including a self-contained `report.html` tim
 |---|---|
 | `chrono_case` | create/open/list a local case |
 | `chrono_search` | optional discovery via DSH search; returns URLs, not evidence |
+| `chrono_plan` | deterministic query plan (subject/alias/event/windows) |
 | `chrono_ingest` | freeze public URL snapshots + metadata |
+| `chrono_index` | list/search local cases |
 | `chrono_feed` | RSS/Atom entries + optional ingest |
 | `chrono_gdelt` | GDELT DOC 2.0 news discovery + optional ingest |
 | `chrono_archive` | Wayback CDX captures; optional/fallback-aware |

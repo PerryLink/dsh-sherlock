@@ -19,7 +19,7 @@ dsh plugin --profile <profile> add dsh-sherlock
 5. `chrono_report`：生成 `report.html`、`report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`，
    用 DSH `present` 展示。
 
-其他工具：`chrono_feed`/`chrono_gdelt`/`chrono_archive` 发现源，`chrono_collect` 50 URL job，
+其他工具：`chrono_plan`（确定性 facet/时间窗）、`chrono_index`（本地跨案卷视图）、`chrono_feed`/`chrono_gdelt`/`chrono_archive` 发现源，`chrono_collect` 50 URL job，
 `chrono_diff` 与上一份报告比较，`chrono_verify` 来源漂移复查，`chrono_claim` 记录陈述，
 `chrono_review` 人工处理冲突。`chrono-investigation` skill 承载方法论。早期
 `sherlock_check` / `sherlock_sites` 用户名工具保留为 legacy 兼容。

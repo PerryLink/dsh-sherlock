@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — 2026-11-09
+
+- `chrono_plan`: deterministic subject/alias/event facets, language and yearly windows; `chrono_search` can execute a plan.
+- `chrono_index`: local cross-case index and filter; no hosted database.
+- Redaction profiles: `internal` / `client` / `public` / `legal`; PII is redacted in labels, claims, titles and query log.
+- Fixture tests for RSS/Atom, GDELT JSON, Wayback CDX, and a mock DSH job path.
+- `npm run benchmark:temporal` with a local 100-event benchmark.
+- 53 tests (with the real DSH schema validator).
+
+
 ## 0.4.0 — 2026-11-09
 
 - Query/coverage ledger: `queries.jsonl`, channel/result/error records, report query section.

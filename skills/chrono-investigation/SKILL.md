@@ -23,7 +23,7 @@ website, use login walls, or search for people.
 
 ## 3. Collect sources
 
-`chrono_search({case_id, queries:[...]})` is an optional discovery aid; its results are not evidence.
+`chrono_plan({case_id, subject, aliases, event, from, to})` builds a reviewable query plan; `chrono_search({case_id, plan_id})` executes it. Search results are not evidence.
 `chrono_ingest({case_id, urls:[...]})` freezes a text snapshot and SHA-256. It returns source ids.
 The source record contains declared dates and observed time, but **not** a conclusion.
 

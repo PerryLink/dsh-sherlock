@@ -8,6 +8,7 @@ import { fetchPage } from '../lib/temporal/fetch.js'
 import { extractPage } from '../lib/temporal/extract.js'
 import { parseDate } from '../lib/temporal/time.js'
 import { clearRobotsCache, robotsAllowed } from '../lib/temporal/robots.js'
+import { ingestFeed, ingestGdelt, queryArchive } from '../lib/temporal/sources.js'
 import { analyzeCase } from '../lib/temporal/analyze.js'
 import { generateReport } from '../lib/temporal/report.js'
 import { addDateAssertion, addEvent, addSource, createCase } from '../lib/temporal/store.js'
@@ -102,11 +103,11 @@ test('store, conflict analysis, and report stay deterministic and non-verdict', 
   }
 })
 
-test('temporal tools expose eight tools and a valid creation schema', async () => {
+test('temporal tools expose ten tools and a valid creation schema', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-temporal-tools-'))
   try {
     const tools = createTemporalTools({ chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, userAgent: 'test' }, '0.2.0')
-    assert.deepEqual(tools.map((tool) => tool.name).sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_claim', 'chrono_ingest', 'chrono_report', 'chrono_review', 'chrono_search'])
+    assert.deepEqual(tools.map((tool) => tool.name).sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_claim', 'chrono_index', 'chrono_ingest', 'chrono_plan', 'chrono_report', 'chrono_review', 'chrono_search'])
     const created = await tools.find((tool) => tool.name === 'chrono_case').execute({ action: 'create', title: 'Case', question: 'Question' })
     assert.match(created.caseId, /^case-/)
     const search = await tools.find((tool) => tool.name === 'chrono_search').execute({ case_id: created.caseId, queries: ['example'] })
@@ -310,6 +311,138 @@ test('claim and review tools keep human decisions append-only', async () => {
     assert.equal(reviewed.review.conflictId, 'conf-test')
     const list = await tools.find((tool) => tool.name === 'chrono_review').execute({ action: 'list', case_id: created.caseId })
     assert.equal(list.reviews.length, 1)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('RSS, GDELT, and CDX adapters parse fixture responses into reviewable rows', async () => {
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url, 'http://127.0.0.1')
+    if (url.pathname === '/feed') {
+      res.writeHead(200, { 'content-type': 'application/rss+xml' })
+      res.end(`<?xml version="1.0"?><rss><channel><item><title>One</title><link>https://a.example/one</link><pubDate>Fri, 15 Mar 2024 10:00:00 GMT</pubDate></item><item><title>Two</title><link>https://a.example/two</link><pubDate>Sat, 16 Mar 2024 10:00:00 GMT</pubDate></item></channel></rss>`)
+      return
+    }
+    if (url.pathname === '/gdelt') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ articles: [{ url: 'https://b.example/news', title: 'News', seendate: '20240315T100000Z', domain: 'b.example', language: 'English' }] }))
+      return
+    }
+    if (url.pathname === '/cdx') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify([['timestamp', 'original', 'statuscode', 'digest'], ['20240302081100', 'https://b.example/news', '200', 'abc']]))
+      return
+    }
+    res.writeHead(404).end()
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-sources-'))
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`
+    const config = { maxSources: 50, maxBytes: 1024 * 1024, timeoutMs: 2000, perHostDelayMs: 0, honorRobots: false, allowPrivateHosts: true, userAgent: 'test' }
+    const record = await createCase(root, { title: 'Adapters', question: 'What happened?' })
+    const feed = await ingestFeed(root, record.caseId, `${base}/feed`, { config, maxEntries: 5, ingest: false })
+    assert.equal(feed.entries.length, 2)
+    assert.match(feed.entries[0].url, /a.example\/one/)
+    const gdelt = await ingestGdelt(root, record.caseId, { config, query: 'example', maxRecords: 5, ingest: false, endpoint: `${base}/gdelt` })
+    assert.equal(gdelt.articles.length, 1)
+    assert.equal(gdelt.articles[0].title, 'News')
+    const archive = await queryArchive(root, record.caseId, { config, url: 'https://b.example/news', limit: 5, endpoint: `${base}/cdx` })
+    assert.equal(archive.captures.length, 1)
+    assert.equal(archive.captures[0].timestamp, '20240302081100')
+    const queries = await (await import('../lib/temporal/store.js')).listQueries(root, record.caseId)
+    assert.ok(queries.some((query) => query.channel === 'feed'))
+    assert.ok(queries.some((query) => query.channel === 'gdelt'))
+    assert.ok(queries.some((query) => query.channel === 'archive'))
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('chrono_collect uses ctx.jobs when a controller is available', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-job-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, chronoPerHostDelayMs: 0, chronoHonorRobots: false, userAgent: 'test' }
+    const record = await createCase(root, { title: 'Job case', question: 'Question?' })
+    let started = false
+    const jobs = {
+      start(spec) {
+        started = true
+        const job = { updateProgress() {}, append() {} }
+        spec.run(job)
+        return 'job-test'
+      },
+    }
+    const tools = createSourceTools(config, { get: (name) => name === 'jobs' ? jobs : undefined })
+    const result = await tools.find((tool) => tool.name === 'chrono_collect').execute({ case_id: record.caseId, urls: ['http://127.0.0.1:1/private'], background: true }, { agent: { session: { id: 'session-test' } } })
+    assert.equal(started, true)
+    assert.equal(result.mode, 'background')
+    assert.equal(result.jobId, 'job-test')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('public redaction removes PII from report files', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-redact-'))
+  try {
+    const record = await createCase(root, { title: 'Redaction', question: 'Question?' })
+    const source = await addSource(root, record.caseId, {
+      requestedUrl: 'https://a.example/x', finalUrl: 'https://a.example/x', httpStatus: 200,
+      contentType: 'text/html', charset: 'utf-8', fetchedAt: '2024-03-02T00:00:00.000Z', byteLength: 10,
+      sha256: 'a'.repeat(64), textSha256: 'b'.repeat(64), text: 'x', headers: {}, redirects: [], access: 'open', domain: 'a.example',
+    }, { title: 'Contact a@b.com', sourceClass: 'media', timeCandidates: [] })
+    const event = await addEvent(root, record.caseId, { label: 'Event', category: 'other', sourceIds: [source.sourceId] })
+    await addDateAssertion(root, record.caseId, { eventId: event.eventId, sourceId: source.sourceId, rawText: '2024-03-01', role: 'event', parsed: parseDate('2024-03-01'), span: null, quoteSha256: 'c'.repeat(64), teg: 'T4' })
+    const report = await generateReport(root, record.caseId, { audience: 'internal', redaction: 'public' })
+    const html = await readFile(path.join(root, 'cases', record.caseId, 'reports', report.reportId, 'report.html'), 'utf8')
+    assert.doesNotMatch(html, /a@b\.com/)
+    assert.match(html, /email redacted/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('chrono_plan builds deterministic facets and chrono_search can execute the plan', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-plan-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    const created = await createCase(root, { title: 'Plan case', question: 'What happened?' })
+    const tools = createTemporalTools(config, '0.4.0')
+    const planned = await tools.find((tool) => tool.name === 'chrono_plan').execute({
+      case_id: created.caseId, subject: 'Acme', aliases: ['ACME Corp'], event: 'factory closure', from: '2023-01-01', to: '2025-01-01', channels: ['search', 'gdelt'],
+    })
+    assert.ok(planned.plan.queries.length >= 4)
+    assert.ok(planned.plan.queries.some((query) => query.text.includes('ACME Corp')))
+    assert.ok(planned.plan.queries.some((query) => query.channel === 'gdelt'))
+    const searched = await tools.find((tool) => tool.name === 'chrono_search').execute({ case_id: created.caseId, plan_id: planned.plan.planId }, {})
+    assert.equal(searched.planId, planned.plan.planId)
+    assert.deepEqual(searched.results, [])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('chrono_index lists local cases without a hosted service', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-index-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    await createCase(root, { title: 'Indexed case', question: 'Where?' })
+    const tools = createTemporalTools(config, '0.4.0')
+    const indexed = await tools.find((tool) => tool.name === 'chrono_index').execute({})
+    assert.equal(indexed.count, 1)
+    assert.equal(indexed.cases[0].title, 'Indexed case')
+    const filtered = await tools.find((tool) => tool.name === 'chrono_index').execute({ query: 'Indexed' })
+    assert.equal(filtered.count, 1)
+    const missing = await tools.find((tool) => tool.name === 'chrono_index').execute({ query: 'not-there' })
+    assert.equal(missing.count, 0)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

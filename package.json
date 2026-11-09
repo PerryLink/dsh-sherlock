@@ -1,6 +1,6 @@
 {
   "name": "dsh-sherlock",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Temporal evidence workbench for DeepSeek Harness; legacy username checks included.",
   "type": "module",
   "main": "index.js",
@@ -22,7 +22,8 @@
     "README.zh.md",
     "CHANGELOG.md",
     "LICENSE",
-    "NOTICE"
+    "NOTICE",
+    "scripts/benchmark-temporal.mjs"
   ],
   "dsh": {
     "bundle": {
@@ -40,7 +41,8 @@
     "lint": "oxlint lib scripts test index.js",
     "gate": "npm run check && npm run typecheck && npm run lint && npm test && npm run pack:check",
     "pack:check": "npm pack --dry-run",
-    "prepack": "node scripts/validate-data.mjs"
+    "prepack": "node scripts/validate-data.mjs",
+    "benchmark:temporal": "node scripts/benchmark-temporal.mjs"
   },
   "keywords": [
     "dsh-plugin",

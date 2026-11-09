@@ -84,6 +84,10 @@ await tools.chrono_analyze({ case_id: c.caseId, action: 'check' })
 await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ```
 
+运行 `npm run benchmark:temporal` 可做本地时序基准（无网络）。
+
+报告支持 `redaction: internal | client | public | legal`；label、claim、标题和查询日志中的 PII 会脱敏，`public` 只渲染 high/medium band 行。`chrono_index` 不依赖托管数据库即可列出/筛选本地案卷。
+
 报告工具只写本地文件，包含自包含的 `report.html` 时间线/冲突板。模型应调用 DSH `present` 展示 `presentFiles` 四个文件；`sources.csv` 留在案卷。插件不上传。人类可用 `/chrono list`、`/chrono status <caseId>`、`/chrono report <caseId>`。
 
 ## 工具
@@ -92,7 +96,9 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 |---|---|
 | `chrono_case` | 建立/打开/列出本地案卷 |
 | `chrono_search` | 可选：通过 DSH 搜索发现 URL；结果不是证据 |
+| `chrono_plan` | 确定性 query plan（主体/别名/事件/时间窗） |
 | `chrono_ingest` | 冻结公开 URL 快照与元数据 |
+| `chrono_index` | 本地案卷列表/筛选 |
 | `chrono_feed` | RSS/Atom 条目 + 可选入库 |
 | `chrono_gdelt` | GDELT DOC 2.0 新闻发现 + 可选入库 |
 | `chrono_archive` | Wayback CDX 捕获；可选/可降级 |

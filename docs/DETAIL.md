@@ -20,7 +20,7 @@ dsh plugin --profile <profile> add dsh-sherlock
 5. `chrono_report` — write `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and
    `report.manifest.json`; present the four `presentFiles` with DSH `present`.
 
-Additional tools: `chrono_feed`/`chrono_gdelt`/`chrono_archive` for discovery, `chrono_collect` for a
+Additional tools: `chrono_plan` (deterministic facets/windows), `chrono_index` (local cross-case view), `chrono_feed`/`chrono_gdelt`/`chrono_archive` for discovery, `chrono_collect` for a
 50-URL job, `chrono_diff` for changes against a previous report, `chrono_verify` for source drift,
 `chrono_claim` for statements, and `chrono_review` for human conflict resolution. The
 `chrono-investigation` skill carries the method. The earlier `sherlock_check` / `sherlock_sites`
