@@ -283,20 +283,21 @@ test('plugin registers two tools and an optional skill, and returns a JSON-safe 
   await writeFile(manifestPath, JSON.stringify({ schemaVersion: 1, source: { project: 'fixture' }, sites: [site] }))
 
   const tools = new Map()
-  let skill
+  const skills = []
   const ctx = {
     tools: { register(definition) { tools.set(definition.name, definition); return () => {} } },
     inject(_deps, callback) {
-      callback({ skills: { register(value) { skill = value; return () => {} } } })
+      callback({ skills: { register(value) { skills.push(value); return () => {} } } })
       return {}
     },
     logger: { warn() {} },
   }
   apply(ctx, { manifestPath, allowPrivateHosts: true, perHostDelayMs: 0, cacheTtlMs: 0 })
 
-  assert.deepEqual([...tools.keys()].sort(), ['sherlock_check', 'sherlock_sites'])
-  assert.equal(skill.name, 'sherlock-osint')
-  assert.match(skill.content, /Sherlock OSINT workflow/)
+  assert.deepEqual([...tools.keys()].sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_ingest', 'chrono_report', 'chrono_search', 'sherlock_check', 'sherlock_sites'])
+  assert.deepEqual(skills.map((entry) => entry.name).sort(), ['chrono-investigation', 'sherlock-osint'])
+  const sherlockSkill = skills.find((entry) => entry.name === 'sherlock-osint')
+  assert.match(sherlockSkill.content, /Sherlock OSINT workflow/)
 
   const exec = { signal: new AbortController().signal }
   const value = await tools.get('sherlock_check').execute({ username: 'alice', scope: 'core', verify: false }, exec)

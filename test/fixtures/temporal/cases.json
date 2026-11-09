@@ -1,0 +1,29 @@
+[
+  {
+    "name": "normal",
+    "event": "Example company announced a shutdown",
+    "assertions": [
+      { "raw": "2024年3月15日", "role": "announcement", "source": "primary" },
+      { "raw": "March 16, 2024", "role": "publication", "source": "media" }
+    ],
+    "expect": { "hardConflict": false, "bandAtLeast": "medium" }
+  },
+  {
+    "name": "hard-time",
+    "event": "Example factory closed",
+    "assertions": [
+      { "raw": "2024-03-15", "role": "event", "source": "media" },
+      { "raw": "2024-03-20", "role": "event", "source": "primary" }
+    ],
+    "expect": { "hardConflict": true, "bandAtMost": "low" }
+  },
+  {
+    "name": "syndication",
+    "event": "Example policy took effect",
+    "assertions": [
+      { "raw": "2024-07-01", "role": "effective", "source": "media-a", "domain": "a.example" },
+      { "raw": "2024-07-01", "role": "effective", "source": "media-b", "domain": "a.example" }
+    ],
+    "expect": { "hardConflict": false, "independentDomains": 1 }
+  }
+]

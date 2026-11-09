@@ -1,7 +1,7 @@
 {
   "name": "dsh-sherlock",
-  "version": "0.1.4",
-  "description": "Sherlock-compatible public username checks for DeepSeek Harness, with blocked/unknown results kept separate.",
+  "version": "0.2.0",
+  "description": "Temporal evidence workbench for DeepSeek Harness; legacy username checks included.",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -49,9 +49,13 @@
     "osint",
     "username",
     "social-media",
-    "reconnaissance"
+    "reconnaissance",
+    "temporal-evidence",
+    "timeline",
+    "evidence",
+    "research"
   ],
-  "license": "Apache-2.0",
+  "license": "Apache-2.0 AND MIT",
   "publishConfig": {
     "access": "public"
   },

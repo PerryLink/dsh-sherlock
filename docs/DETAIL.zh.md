@@ -1,6 +1,7 @@
 # dsh-sherlock
 
-基于固定 Sherlock 站点清单检查公开用户名，面向 DeepSeek Harness 返回结构化、可复核的结果。
+面向 DeepSeek Harness 的时序证据工作台。把公开 URL 变成一份本地可复核的时间线：冻结快照、
+分离时间角色、日期冲突、缺口、覆盖范围，以及四件套报告。它不建站、不查人、不裁决真假。
 
 ## 安装
 
@@ -8,24 +9,32 @@
 dsh plugin --profile <profile> add dsh-sherlock
 ```
 
-## 工具
+## 工作流
 
-- `sherlock_check`：检查一个 handle；默认 core 41 个有效站点，`all` 单次最多 120 个。
-- `sherlock_sites`：列出站点名、检测器类型和可靠性。
+1. `chrono_case`：建立本地案卷。
+   可选：`chrono_search` 通过 DSH 配置的搜索 provider 发现候选 URL。
+2. `chrono_ingest`：抓取 1–10 个公开 URL，保存文本快照和 SHA-256。
+3. `chrono_assert`：记录事件和原始日期断言，必须选角色。
+4. `chrono_analyze`：查看冲突、T-S-C-E 证据、时间线、缺口、覆盖。
+5. `chrono_report`：生成 `report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`，
+   用 DSH `present` 展示。
 
-## 正确理解结果
+`chrono-investigation` skill 承载方法论。早期 `sherlock_check` / `sherlock_sites` 用户名工具保留为
+legacy 兼容。
 
-| 状态 | 含义 |
-|---|---|
-| `claimed` | 检测到 profile 形状；是线索，不是身份证明 |
-| `available` | 命中站点 not-found 信号；不代表全网不存在 |
-| `unknown` | 超时/DNS/TLS/5xx/检测器不匹配；没查成 |
-| `blocked` | 401/403/429/999 或 WAF；不是不存在 |
-| `illegal` | 不匹配站点格式 |
-| `unreliable` | 随机对照 handle 也被 claimed；该站点规则本次失效 |
+## 五轴时间
 
-工具不返回页面 HTML。需要核实公开 profile 页面时，单独用 `web_fetch`。NSFW 默认关闭。请遵守适用法律和站点条款；不要用于骚扰、人肉、绕过认证或对个人做高风险决策。
+事件、发布、首次可见、抓取、修改时间分开存。一天是一个带精度和时区的区间，不是伪精确的瞬时点。
+缺时区会明确报告，不会静默替换成 UTC。
 
-## 数据
+## 诚实的输出
 
-数据快照固定随包发布，`data/SOURCE.json` 记录 upstream commit 和 SHA-256。数据为 MIT；见 `NOTICE`。
+- T-S-C-E 向量和 band，而不是一个“可信度百分比”。
+- `hard_time` / `role_mismatch` / `precision_mismatch` / `timezone_ambiguity` / `dependence`。
+- `未检查`、`已检查未发现`、`无法访问`、`证据不足`是不同状态。
+- 不做真/假裁决，不做身份结论，不返回原始 HTML，不复制全文。
+
+## 边界
+
+只读公开来源；不登录、不绕过付费墙/验证码/WAF。不建站、不做爬虫网络、不做批量收集、不查人、
+不做人肉或高风险决策。报告哈希是完整性校验，不是可信时间戳或法律意见。

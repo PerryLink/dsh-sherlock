@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Sherlock 用户名检查",
-    "description": "基于固定 Sherlock 站点清单检查公开用户名，明确区分已占用、被拦截、未知和不可信结果。",
+    "title": "时序证据工作台",
+    "description": "把公开 URL 变成本地可复核的时间线：分离时间角色、日期冲突、缺口、覆盖和四件套报告。不建站、不查人、不裁决真假。",
     "detail": "docs/DETAIL.zh.md"
   }
 }

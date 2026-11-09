@@ -2,73 +2,120 @@
 
 [![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 Sherlock 兼容用户名检查插件。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的**时序证据工作台**；早期用户名检查工具保留为 legacy。
 
-它把 [Sherlock](https://github.com/sherlock-project/sherlock) 的站点清单变成一个 DSH 原生 bundle：两个工具 + 一个按需加载的 skill。它不是 Python CLI 的 1:1 移植——**被拦截、未知、不可信**会和已占用、可用明确分开。
+它**不建站、不托管服务、不查人**。输入公开 URL（可选 DSH 搜索结果），在本地冻结快照，分离同一条日期上的不同时间角色，重建可复核的时间线，输出冲突、缺口和覆盖范围。它不会给出“真/假”裁决。
 
-> 与 Sherlock 项目无隶属或背书关系；名字只表示兼容其站点清单格式。
+> 名称保留用于连续性；产品方向是时序证据，而不是用户名枚举。
 
-## 能做什么
+## 工作流
 
-- `sherlock_check`：用固定快照检查一个公开 handle，覆盖 481 个站点。
-- `sherlock_sites`：列出站点名、检测器类型和可靠性，供模型选择目标。
-- `sherlock-osint` skill：解释六态、复核、报告模板和边界。
+`chrono_case` → `chrono_ingest` → `chrono_assert` → `chrono_analyze` → `chrono_report`
 
-默认范围是 curated **core 41 个有效站点**（45 个名字扣除 4 个排除项）。`scope: "all"` 扩大范围，但单次最多 **120** 个站点；NSFW 默认关闭。
+- **chrono_case**：建立/打开本地案卷。
+- **chrono_ingest**：抓取 1–10 个公开 URL，保存文本快照和 SHA-256，抽取发布者声明的日期。
+- **chrono_assert**：记录事件和原始日期断言，必须选角色（`event`/`announcement`/`effective`/`publication`/`update`/`correction`/`retraction`/`access`/`deadline`/`period`）。
+- **chrono_analyze**：确定性的冲突/证据/时间线/缺口/覆盖分析。
+- **chrono_report**：生成 `report.md`、`timeline.csv`、`sources.csv`、`report.manifest.json`。
+- **chrono-investigation** skill：五轴时间、T-S-C-E、冲突处理、不确定性语言。
 
-## 安装
+### 五轴时间（绝不压成一个日期）
+
+| 轴 | 含义 |
+|---|---|
+| **E** Event | 事件发生/生效时间 |
+| **P** Publication | 该说法首次公开发布时间 |
+| **F** First seen | 最早可证明有人看见过它（存档） |
+| **O** Observed | 本次抓取时间 |
+| **M** Modified | 来源声称的编辑/撤回时间 |
+
+检查 `E ≤ P ≤ F ≤ O`、`P ≤ M`、`E ≤ M`；违反是 `temporal_anomaly`，不是结论。
+
+### T-S-C-E 证据向量
+
+每个事件带 **T**（时间精度/时区/角色）、**S**（来源可追溯性）、**C**（独立佐证）、**E**（快照/span/哈希可复现）。报告显示向量和 band（low/medium/high），不显示单一“可信度百分比”。单一来源或转载不能 high。
+
+### 日期冲突分类
+
+`hard_time`（同角色、精度可比、区间不相交）、`role_mismatch`、`precision_mismatch`、`timezone_ambiguity`、`sequence`、`version`、`dependence`。报告说明“需要什么才能解决”，不替用户选“正确日期”。
+
+### 覆盖声明
+
+负向结论必须带覆盖声明：查了什么、在哪、时间窗/语言/域名范围、什么时候查、命中多少、哪些不可达。`未检查`、`已检查未发现`、`无法访问`、`证据不足`是四种不同状态。
+
+## 快速开始
 
 ```bash
-# npm
 dsh plugin --profile <profile> add dsh-sherlock
-
-# GitHub（无构建步骤，不需要 allowBuilds）
-dsh plugin --profile <profile> add github:PerryLink/dsh-sherlock#<40-hex-sha>
-
-# 本地
-dsh plugin --profile <profile> add ./dsh-sherlock
 ```
 
-验证：
-
-```bash
-dsh --profile <profile> --dump-config | grep -A2 dsh-sherlock
-```
-
-然后对 DSH 说：
+对 DSH 说：
 
 ```text
-检查 handle "alice" 在 core 站点上是否存在，并总结线索。
+为这个问题建立时序案卷：“Acme 何时宣布关厂？两个来源为什么对不上？”
+我手上有这些 URL：...
+请用 chrono_case、chrono_ingest、chrono_assert、chrono_analyze、chrono_report。
+不要判断哪个来源是真的；展示日期角色、冲突、缺口，以及什么能解决它们。
 ```
 
-PTC 里也可以直接调用：
+也可以直接 PTC 调用：
 
 ```js
-await tools.sherlock_check({ username: 'alice', scope: 'core' })
+const c = await tools.chrono_case({
+  action: 'create',
+  title: 'Acme 关厂时间线',
+  question: 'Acme 何时宣布关厂？',
+  purpose: 'internal',
+  subject_type: 'organization',
+  subject_name: 'Acme'
+})
+await tools.chrono_ingest({ case_id: c.caseId, urls: ['https://example.com/notice'] })
+// 读取返回的 source id，然后照抄原始日期文本；不要自己算日期。
+await tools.chrono_assert({
+  case_id: c.caseId,
+  source_id: '<source-id>',
+  event_label: 'Acme 宣布关厂',
+  event_category: 'corporate',
+  dates: [{ raw_text: '2024年3月15日', role: 'announcement' }]
+})
+await tools.chrono_analyze({ case_id: c.caseId, action: 'check' })
+await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ```
 
-## 六态
+报告工具只写本地文件；模型应再调用 DSH `present` 展示四个文件，插件不上传。
 
-| 状态 | 含义 | 应该怎么用 |
-|---|---|---|
-| `claimed` | 检测到 profile 形状 | 是线索，不是身份证明 |
-| `available` | 命中站点的 not-found 信号 | 不代表全网不存在 |
-| `unknown` | 超时/DNS/TLS/5xx/检测器不匹配 | 没查成，不能推断不存在 |
-| `blocked` | 401/403/429/999 或 WAF | 被拦截，不能推断不存在 |
-| `illegal` | 不匹配站点 `regexCheck` | 该站点不允许这个格式 |
-| `unreliable` | 随机对照 handle 也被 claimed | 站点规则失效，这个 lead 不可信 |
+## 工具
 
-`confidence` 为 `high`/`medium`/`low`；`evidence` 记录 HTTP 状态、检测器、重定向和对照结果，不返回页面 HTML。
+| 工具 | 用途 |
+|---|---|
+| `chrono_case` | 建立/打开/列出本地案卷 |
+| `chrono_search` | 可选：通过 DSH 搜索发现 URL；结果不是证据 |
+| `chrono_ingest` | 冻结公开 URL 快照与元数据 |
+| `chrono_assert` | 记录事件和原始日期断言 |
+| `chrono_analyze` | 冲突、证据向量、时间线、缺口、覆盖 |
+| `chrono_report` | 四件套报告 + manifest 哈希 |
+| `sherlock_check` | **legacy** 用户名检查，保留兼容 |
+| `sherlock_sites` | **legacy** 站点列表 |
+
+`sherlock-osint` skill 保留用于说明 legacy；主工作流是 `chrono-investigation`。
+
+## 本地案卷
+
+默认根目录：宿主工作目录下的 `.dsh-sherlock/chrono`。结构见英文 README。没有网站、服务器、账号或外部数据库；case ID 由插件生成，模型不能传文件路径。
 
 ## 配置
-
-在 profile patch 的插件行上配置：
 
 ```yaml
 - insert:
     - id: dsh-sherlock
       name: dsh-sherlock
       config:
+        chronoRoot: .dsh-sherlock/chrono
+        chronoMaxSources: 50
+        chronoMaxBytes: 2097152
+        chronoTimeoutMs: 15000
+        chronoPerHostDelayMs: 250
+        # legacy
         defaultScope: core
         maxSites: 120
         concurrency: 10
@@ -80,42 +127,25 @@ await tools.sherlock_check({ username: 'alice', scope: 'core' })
         cacheTtlMs: 600000
         includeNsfw: false
         honorExclusions: true
+        allowPrivateHosts: false
 ```
 
-| 配置 | 默认 | 说明 |
-|---|---|---|
-| `defaultScope` | `core` | `core` 或 `all` |
-| `maxSites` | `120` | 硬上限 |
-| `concurrency` | `10` | 1–50 |
-| `perHostDelayMs` | `350` | 同一 host 串行 + 间隔 |
-| `timeoutMs` | `10000` | 单请求 |
-| `toolTimeoutMs` | `180000` | 工具截止时间 |
-| `maxResponseBytes` | `524288` | 响应体上限；匹配到上限为止 |
-| `maxVerify` | `30` | claimed 的随机负样本上限 |
-| `cacheTtlMs` | `600000` | claimed/available；blocked/unknown 最多 60s |
-| `includeNsfw` | `false` | 部署级默认 |
-| `honorExclusions` | `true` | 上游 false-positive 排除项 |
-| `userAgent` | 包默认 UA | 默认透明 |
-| `manifestPath` | 包内数据 | 高级/测试用；不接受模型给 URL |
-
-网络代理由 DSH 处理：启动 `dsh` 前 export `HTTPS_PROXY` / `HTTP_PROXY`，插件用 plain `fetch` 自动继承进程级 dispatcher；不要让模型传 proxy。
+时序工具拒绝私有/回环地址；`allowPrivateHosts` 只属于 legacy 测试路径，不要在 profile 里开启。
 
 ## 安全边界
 
-- 只查公开页面；不登录、不绕付费墙/验证码、不使用凭据。
-- 工具不返回原始 HTML；需要看 profile 页面时单独用 `web_fetch`。
-- URL 模板来自包内数据并校验；重定向逐跳检查；默认拒绝私有/回环地址（测试开关除外）。
-- Header allowlist：丢弃 `Cookie`、`Authorization`、`Host`。
-- 默认 per-host 限速、512 KB body cap、并发上限。
-- 不做批量扫号、WAF 绕过或高风险决策。
+- 只读公开来源；不登录、不绕过付费墙/验证码/WAF、不使用凭据。
+- 不建站、不做 SaaS、不做爬虫网络、不做批量收集。
+- 不做身份/归属结论；不做人肉、骚扰或高风险决策。
+- 报告不返回原始 HTML/完整正文；只放短引文、链接和哈希。
+- 哈希是完整性校验，不是可信时间戳或法律意见。
+- 不裁决真假；只报告已收集证据支持什么、冲突什么、未知什么。
 
-请遵守目标站点条款和适用法律。
+## Legacy 用户名工具
 
-## 数据
+`sherlock_check`/`sherlock_sites` 仍对 `data/sites.json` 的 Sherlock 格式快照工作，保留六态、随机负控制和 120 站上限；作为产品方向已弃用。旧行为和数据声明见 [docs/LEGACY-USERNAME.md](docs/LEGACY-USERNAME.md)。
 
-`data/sites.json` 是 Sherlock manifest 的归一化快照；`data/SOURCE.json` 记录 upstream commit、raw SHA-256 和计数。数据为 MIT；见 `data/SHERLOCK-LICENSE` 与 `NOTICE`。
-
-数据固定随包发布，保证可复现；维护者用 `scripts/sync-sherlock.mjs` 更新、review 后发 patch 版本。不要在模型调用时拉取 manifest。
+上游数据 MIT；插件代码 Apache-2.0。见 `LICENSE`、`NOTICE`、`data/SHERLOCK-LICENSE`。
 
 ## 开发
 
@@ -123,34 +153,30 @@ await tools.sherlock_check({ username: 'alice', scope: 'core' })
 
 ```bash
 npm ci
-npm run typecheck        # tsc --checkJs，不产物
-npm run lint             # oxlint
-npm test                 # node --test，只用本地 fixture
-npm run check            # 数据校验
-npm run pack:check       # npm pack --dry-run
-npm run gate             # 以上全部
+npm run typecheck
+npm run lint
+npm test
+npm run check
+npm run gate
 ```
 
-测试覆盖状态码、message、response_url、WAF、重定向、POST payload、自定义 header、超时、body cap、排除项、负样本、缓存、私有地址拒绝、abort 取消、数组检测器、工具 schema 和数据完整性。真实 DSH schema 校验：
+真实 DSH schema 校验：
 
 ```bash
 DSH_TOOLS_PATH=/path/to/dsh-tools/lib/index.js npm test
 ```
 
-Live benchmark（会发真实网络请求，不属于 CI）：
+## 文档
 
-```bash
-node scripts/benchmark.mjs --username blue --scope core --verify=false
-```
-
-## 更多文档
-
-- [数据包与同步 runbook](docs/DATA.md)
-- [发布 runbook](docs/RELEASING.md)
-- [Benchmark 记录](docs/BENCHMARK.md)
+- [时间证据模型](docs/TIME-EVIDENCE-MODEL.md)
+- [Legacy 用户名行为](docs/LEGACY-USERNAME.md)
+- [数据同步](docs/DATA.md)
+- [发布](docs/RELEASING.md)
+- [Benchmark](docs/BENCHMARK.md)
+- [插件详情](docs/DETAIL.md)
 - [安全策略](SECURITY.md)
-- [贡献指南](CONTRIBUTING.md)
+- [贡献](CONTRIBUTING.md)
 
-## 许可
+## 许可证
 
-插件代码 Apache-2.0；Sherlock 派生数据 MIT。见 `LICENSE`、`NOTICE`、`data/SHERLOCK-LICENSE`。
+插件代码 Apache-2.0；legacy Sherlock 派生数据 MIT。见 `LICENSE`、`NOTICE`、`data/SHERLOCK-LICENSE`。

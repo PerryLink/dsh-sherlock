@@ -1,11 +1,13 @@
 dsh-sherlock
 Copyright 2026 PerryLink
 
-This product includes site manifest data derived from the Sherlock project
-(https://github.com/sherlock-project/sherlock), which is licensed under the
-MIT License. The upstream license text is reproduced in
-data/SHERLOCK-LICENSE.
+The plugin code is licensed under the Apache License, Version 2.0.
 
-dsh-sherlock is an independent integration and is not affiliated with or
-endorsed by the Sherlock project. The Sherlock name is used only to describe
-compatibility with its site-manifest format.
+The legacy username tools include a normalized site manifest derived from the
+Sherlock project (https://github.com/sherlock-project/sherlock), which is
+licensed under the MIT License. The upstream license text is reproduced in
+data/SHERLOCK-LICENSE. That legacy data is not used by the temporal evidence
+tools.
+
+The dsh-sherlock name is retained for continuity. This is an independent
+project and is not affiliated with or endorsed by the Sherlock project.

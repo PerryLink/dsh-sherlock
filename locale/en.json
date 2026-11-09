@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Sherlock username checks",
-    "description": "Check public usernames across a pinned Sherlock site manifest, with blocked, unknown, and unreliable results kept separate.",
+    "title": "Temporal evidence workbench",
+    "description": "Turn public URLs into a local, reviewable timeline with separated clocks, date conflicts, gaps, and a four-file report. No website, no people search, no true/false verdict.",
     "detail": "docs/DETAIL.md"
   }
 }

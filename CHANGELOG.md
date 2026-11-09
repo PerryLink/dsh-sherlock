@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-11-09
+
+- Added the temporal evidence workbench: `chrono_case`, `chrono_ingest`, `chrono_assert`,
+  `chrono_analyze`, and `chrono_report`; local case files, five clocks, T-S-C-E, conflict/gap/
+  coverage analysis, and a four-file report.
+- Added the `chrono-investigation` skill. The legacy `sherlock_check`/`sherlock_sites` tools remain
+  for compatibility and are now documented as legacy.
+- No website, server, crawler network, or identity lookup was added.
+
+
 ## 0.1.5 — 2026-11-09 (deprecated, not the release line)
 
 - Workaround release published while the 0.1.4 tarball was still propagating; the
