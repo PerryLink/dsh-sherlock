@@ -20,7 +20,10 @@ dsh plugin --profile <profile> add dsh-sherlock
 5. `chrono_report` — write `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and
    `report.manifest.json`; present the four `presentFiles` with DSH `present`.
 
-The `chrono-investigation` skill carries the method. The earlier `sherlock_check` / `sherlock_sites`
+Additional tools: `chrono_feed`/`chrono_gdelt`/`chrono_archive` for discovery, `chrono_collect` for a
+50-URL job, `chrono_diff` for changes against a previous report, `chrono_verify` for source drift,
+`chrono_claim` for statements, and `chrono_review` for human conflict resolution. The
+`chrono-investigation` skill carries the method. The earlier `sherlock_check` / `sherlock_sites`
 username tools remain as legacy compatibility.
 
 ## Five clocks
@@ -31,6 +34,7 @@ not silently replaced with UTC.
 
 ## Honest output
 
+- Query/coverage ledger (`queries.jsonl`) and TEG (T1–T4) per time value.
 - T-S-C-E vector and band, not one credibility percentage.
 - `hard_time` / `role_mismatch` / `precision_mismatch` / `timezone_ambiguity` / `dependence`.
 - `not checked`, `checked and not found`, `unreachable`, and `insufficient evidence` are distinct.

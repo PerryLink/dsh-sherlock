@@ -98,6 +98,10 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 | `chrono_archive` | Wayback CDX 捕获；可选/可降级 |
 | `chrono_collect` | 最多 50 URL；DSH job 或前台回退 |
 | `chrono_watch` | 通过 DSH schedule 的持久观察 |
+| `chrono_diff` | 与上一份报告的确定性 diff |
+| `chrono_verify` | 重抓来源并记录哈希/状态漂移 |
+| `chrono_claim` | 在案卷中记录 claim/陈述 |
+| `chrono_review` | 人工复核/解释冲突 |
 | `chrono_assert` | 记录事件和原始日期断言 |
 | `chrono_analyze` | 冲突、证据向量、时间线、缺口、覆盖 |
 | `chrono_report` | 可视化 `report.html` + Markdown/CSV + manifest 哈希 |
@@ -122,6 +126,7 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
         chronoMaxBytes: 2097152
         chronoTimeoutMs: 15000
         chronoPerHostDelayMs: 250
+        chronoHonorRobots: true
         # legacy
         defaultScope: core
         maxSites: 120

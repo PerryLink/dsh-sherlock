@@ -7,6 +7,7 @@ import path from 'node:path'
 import { fetchPage } from '../lib/temporal/fetch.js'
 import { extractPage } from '../lib/temporal/extract.js'
 import { parseDate } from '../lib/temporal/time.js'
+import { clearRobotsCache, robotsAllowed } from '../lib/temporal/robots.js'
 import { analyzeCase } from '../lib/temporal/analyze.js'
 import { generateReport } from '../lib/temporal/report.js'
 import { addDateAssertion, addEvent, addSource, createCase } from '../lib/temporal/store.js'
@@ -55,7 +56,7 @@ test('HTML extraction separates published, updated, and observed candidates', as
     const page = await fetchPage(`http://127.0.0.1:${port}/page`, { allowPrivateHosts: true })
     const extracted = extractPage(page)
     assert.equal(extracted.title, 'Factory announcement')
-    assert.ok(extracted.timeCandidates.some((candidate) => candidate.field === 'published' && candidate.parsed?.timeZone === '+08:00'))
+    assert.ok(extracted.timeCandidates.some((candidate) => candidate.field === 'published' && candidate.parsed?.timeZone === '+08:00' && candidate.teg === 'T2'))
     assert.ok(extracted.timeCandidates.some((candidate) => candidate.field === 'updated' && candidate.source === 'http.last-modified'))
     assert.ok(extracted.timeCandidates.some((candidate) => candidate.field === 'observed'))
     assert.match(page.sha256, /^[0-9a-f]{64}$/)
@@ -101,11 +102,11 @@ test('store, conflict analysis, and report stay deterministic and non-verdict', 
   }
 })
 
-test('temporal tools expose six tools and a valid creation schema', async () => {
+test('temporal tools expose eight tools and a valid creation schema', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-temporal-tools-'))
   try {
     const tools = createTemporalTools({ chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, userAgent: 'test' }, '0.2.0')
-    assert.deepEqual(tools.map((tool) => tool.name).sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_ingest', 'chrono_report', 'chrono_search'])
+    assert.deepEqual(tools.map((tool) => tool.name).sort(), ['chrono_analyze', 'chrono_assert', 'chrono_case', 'chrono_claim', 'chrono_ingest', 'chrono_report', 'chrono_review', 'chrono_search'])
     const created = await tools.find((tool) => tool.name === 'chrono_case').execute({ action: 'create', title: 'Case', question: 'Question' })
     assert.match(created.caseId, /^case-/)
     const search = await tools.find((tool) => tool.name === 'chrono_search').execute({ case_id: created.caseId, queries: ['example'] })
@@ -169,6 +170,8 @@ test('source tool fallback and /chrono command work without external services', 
     assert.equal(collect.mode, 'foreground')
     assert.ok(collect.warnings.length)
     assert.deepEqual(collect.sources, [])
+    const sourceAnalysis = await analyzeCase(root, created.caseId)
+    assert.ok(sourceAnalysis.coverage.queries.length >= 1)
     if (process.env.DSH_TOOLS_PATH) {
       const mod = await import(process.env.DSH_TOOLS_PATH)
       assert.deepEqual(mod.validateJsonSchemaValue(tools.find((tool) => tool.name === 'chrono_collect').output.schema, collect, ''), [])
@@ -214,6 +217,99 @@ test('chrono_watch creates and deletes a schedule-backed watch', async () => {
     assert.equal(deleted.mode, 'watch-delete')
     assert.equal(deleted.watches.length, 0)
     assert.equal(calls[1].request.action, 'delete')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('chrono_diff reports source and date changes against a baseline report', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-diff-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    const record = await createCase(root, { title: 'Diff case', question: 'What changed?' })
+    const base = {
+      requestedUrl: 'https://a.example/a', finalUrl: 'https://a.example/a', httpStatus: 200,
+      contentType: 'text/html', charset: 'utf-8', fetchedAt: '2024-03-02T00:00:00.000Z', byteLength: 10,
+      sha256: 'a'.repeat(64), textSha256: 'b'.repeat(64), text: 'The event was on 2024-03-01.',
+      headers: {}, redirects: [], access: 'open', domain: 'a.example',
+    }
+    const source = await addSource(root, record.caseId, base, { title: 'A', sourceClass: 'media', timeCandidates: [] })
+    const event = await addEvent(root, record.caseId, { label: 'Event', category: 'other', sourceIds: [source.sourceId] })
+    await addDateAssertion(root, record.caseId, { eventId: event.eventId, sourceId: source.sourceId, rawText: '2024-03-01', role: 'event', parsed: parseDate('2024-03-01'), span: null, quoteSha256: 'c'.repeat(64), teg: 'T4' })
+    const report = await generateReport(root, record.caseId, { audience: 'internal' })
+    const tools = createSourceTools(config, { get: () => undefined })
+    const noChange = await tools.find((tool) => tool.name === 'chrono_diff').execute({ case_id: record.caseId, baseline_report_id: report.reportId })
+    assert.equal(noChange.sourcesAdded.length, 0)
+    assert.equal(noChange.datesAdded.length, 0)
+    await addDateAssertion(root, record.caseId, { eventId: event.eventId, sourceId: source.sourceId, rawText: '2024-03-02', role: 'event', parsed: parseDate('2024-03-02'), span: null, quoteSha256: 'd'.repeat(64), teg: 'T4' })
+    const changed = await tools.find((tool) => tool.name === 'chrono_diff').execute({ case_id: record.caseId, baseline_report_id: report.reportId })
+    assert.equal(changed.datesAdded.length, 1)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('report language lint rejects verdict/identity language in case labels', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-lint-'))
+  try {
+    const record = await createCase(root, { title: 'Lint', question: 'Question?' })
+    const source = await addSource(root, record.caseId, {
+      requestedUrl: 'https://a.example/x', finalUrl: 'https://a.example/x', httpStatus: 200,
+      contentType: 'text/html', charset: 'utf-8', fetchedAt: '2024-03-02T00:00:00.000Z', byteLength: 10,
+      sha256: 'a'.repeat(64), textSha256: 'b'.repeat(64), text: 'x', headers: {}, redirects: [], access: 'open', domain: 'a.example',
+    }, { title: 'confirmed identity', sourceClass: 'media', timeCandidates: [] })
+    await addEvent(root, record.caseId, { label: 'The same person', category: 'other', sourceIds: [source.sourceId] })
+    await assert.rejects(generateReport(root, record.caseId, { audience: 'editor' }), /language lint failed/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('robots gate honours a simple Disallow and fails open on an unavailable file', async () => {
+  const server = http.createServer((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' })
+      res.end('User-agent: *\nDisallow: /private\nAllow: /private/open\n')
+      return
+    }
+    res.writeHead(200).end('ok')
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`
+    clearRobotsCache()
+    assert.equal((await robotsAllowed(`${base}/private/page`, { timeoutMs: 1000 })).allowed, false)
+    assert.equal((await robotsAllowed(`${base}/public/page`, { timeoutMs: 1000 })).allowed, true)
+    clearRobotsCache()
+    const unavailable = await robotsAllowed('http://127.0.0.1:1/robots-unreachable', { timeoutMs: 200 })
+    assert.equal(unavailable.allowed, true)
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+
+test('claim and review tools keep human decisions append-only', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-review-'))
+  try {
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    const created = await createCase(root, { title: 'Review case', question: 'When?' })
+    const source = await addSource(root, created.caseId, {
+      requestedUrl: 'https://a.example/x', finalUrl: 'https://a.example/x', httpStatus: 200,
+      contentType: 'text/html', charset: 'utf-8', fetchedAt: '2024-03-22T00:00:00.000Z', byteLength: 10,
+      sha256: 'a'.repeat(64), textSha256: 'b'.repeat(64), text: 'The event was on 2024-03-15.', headers: {}, redirects: [], access: 'open', domain: 'a.example',
+    }, { title: 'A', sourceClass: 'media', timeCandidates: [] })
+    const event = await addEvent(root, created.caseId, { label: 'Event', category: 'other', sourceIds: [source.sourceId] })
+    await addDateAssertion(root, created.caseId, { eventId: event.eventId, sourceId: source.sourceId, rawText: '2024-03-15', role: 'event', parsed: parseDate('2024-03-15'), span: null, quoteSha256: 'c'.repeat(64), teg: 'T4' })
+    const tools = createTemporalTools(config, '0.3.0')
+    const claim = await tools.find((tool) => tool.name === 'chrono_claim').execute({ case_id: created.caseId, text: 'The event happened', status: 'proposed' })
+    assert.equal(claim.claim.text, 'The event happened')
+    const reviewed = await tools.find((tool) => tool.name === 'chrono_review').execute({ action: 'resolve', case_id: created.caseId, conflict_id: 'conf-test', resolution: 'explained', note: 'Same interval' })
+    assert.equal(reviewed.review.conflictId, 'conf-test')
+    const list = await tools.find((tool) => tool.name === 'chrono_review').execute({ action: 'list', case_id: created.caseId })
+    assert.equal(list.reviews.length, 1)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

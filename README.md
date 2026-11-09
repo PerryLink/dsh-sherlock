@@ -16,6 +16,7 @@ It does **not** build or host a website. It does **not** search for people. It t
 - **chrono_ingest** fetches 1–10 public URLs, stores text snapshots and SHA-256, and extracts declared dates.
 - **chrono_assert** records an event and its raw date assertions with a role (`event`, `announcement`, `effective`, `publication`, `update`, `correction`, `retraction`, `access`, `deadline`, `period`).
 - **chrono_analyze** runs deterministic conflict/evidence/timeline/gap/coverage analysis.
+- Every source/query is recorded in `queries.jsonl`; the report has a query log and TEG per time value. The robots gate and per-host delay apply to URL ingestion.
 - **chrono_report** writes a self-contained `report.html`, `report.md`, `timeline.csv`, `sources.csv`, and `report.manifest.json`; `presentFiles` recommends four.
 - The `chrono-investigation` skill carries the method: five clocks, T-S-C-E, conflict handling, uncertainty language.
 
@@ -103,6 +104,10 @@ The report tool writes local files, including a self-contained `report.html` tim
 | `chrono_archive` | Wayback CDX captures; optional/fallback-aware |
 | `chrono_collect` | up to 50 URLs; DSH job or foreground fallback |
 | `chrono_watch` | durable local watch via DSH schedule |
+| `chrono_diff` | deterministic diff against a prior report |
+| `chrono_verify` | re-fetch a source and record hash/status drift |
+| `chrono_claim` | record a claim/statement in the case |
+| `chrono_review` | human review/resolution of a conflict |
 | `chrono_assert` | record events and raw date assertions |
 | `chrono_analyze` | conflicts, evidence vectors, timeline, gaps, coverage |
 | `chrono_report` | visual `report.html` + Markdown/CSV + manifest hashes |
@@ -147,6 +152,7 @@ No website, server, account, or external database is created. Case IDs are gener
         chronoMaxBytes: 2097152
         chronoTimeoutMs: 15000
         chronoPerHostDelayMs: 250
+        chronoHonorRobots: true
         # legacy username tools
         defaultScope: core
         maxSites: 120

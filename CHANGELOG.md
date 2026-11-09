@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 — 2026-11-09
+
+- Query/coverage ledger: `queries.jsonl`, channel/result/error records, report query section.
+- TEG (T1–T4) now travels from source candidates into date assertions and the report.
+- Per-host delay, robots.txt gate, and one retry for 429/5xx on URL ingestion.
+- `chrono_diff` compares the current case to a prior report manifest.
+- `chrono_verify` re-fetches a source and records hash/status drift.
+- `chrono_review` records human conflict resolutions; `chrono_claim` records claims.
+- Report language lint rejects verdict/identity language in user-authored labels; PII labels are flagged.
+- Archive captures are stored in the case ledger.
+- 48 tests (with the real DSH schema validator).
+
+
 ## 0.3.0 — 2026-11-09
 
 - Added source adapters: `chrono_feed` (RSS/Atom), `chrono_gdelt` (GDELT DOC 2.0), and

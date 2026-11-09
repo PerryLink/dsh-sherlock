@@ -1,6 +1,6 @@
 {
   "name": "dsh-sherlock",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Temporal evidence workbench for DeepSeek Harness; legacy username checks included.",
   "type": "module",
   "main": "index.js",
