@@ -190,3 +190,31 @@ test('source tool fallback and /chrono command work without external services', 
     await rm(root, { recursive: true, force: true })
   }
 })
+
+
+test('chrono_watch creates and deletes a schedule-backed watch', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'dsh-sherlock-watch-'))
+  try {
+    const calls = []
+    const schedule = {
+      async create(request, sessionId) { calls.push({ kind: 'create', request, sessionId }); return { id: 'schedule-test' } },
+      async edit(request, sessionId) { calls.push({ kind: 'edit', request, sessionId }); return { deleted: true } },
+    }
+    const config = { chronoRoot: root, chronoTimeoutMs: 1000, chronoMaxBytes: 1024, chronoMaxSources: 50, userAgent: 'test' }
+    const created = await createCase(root, { title: 'Watch case', question: 'What changed?' })
+    const tools = createSourceTools(config, { get: (name) => name === 'schedule' ? schedule : undefined })
+    const watch = await tools.find((tool) => tool.name === 'chrono_watch').execute({
+      action: 'create', case_id: created.caseId, rrule: 'DTSTART;TZID=Asia/Shanghai:20261116T090000\nRRULE:FREQ=WEEKLY', urls: ['https://example.com/a'], title: 'Weekly watch',
+    }, { agent: { session: { id: 'session-test' } } })
+    assert.equal(watch.mode, 'watch-create')
+    assert.equal(watch.watches.length, 1)
+    assert.equal(watch.watches[0].scheduleId, 'schedule-test')
+    assert.equal(calls[0].sessionId, 'session-test')
+    const deleted = await tools.find((tool) => tool.name === 'chrono_watch').execute({ action: 'delete', case_id: created.caseId, watch_id: watch.watches[0].watchId }, { agent: { session: { id: 'session-test' } } })
+    assert.equal(deleted.mode, 'watch-delete')
+    assert.equal(deleted.watches.length, 0)
+    assert.equal(calls[1].request.action, 'delete')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
