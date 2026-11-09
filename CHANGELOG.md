@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 — 2026-11-09
+
+- Rebuilt the npm tarball from the current `main` so the packaged docs, locale detail metadata, and
+  data normalization match the repository. 0.1.2 was published from the earlier staged tarball.
+- No runtime behavior change.
+
 ## 0.1.2 — 2026-11-08
 
 - Added TypeScript/checkJs and oxlint gates.
