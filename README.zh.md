@@ -1,12 +1,27 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-sherlock-hero-zh-dark.webp">
+  <img src="docs/assets/dsh-sherlock-hero-zh-light.webp" width="100%" alt="dsh-sherlock 配图：同一事件被两条断言写成不同日期——E event 2024-03-15（a.example）与 2024-03-20（b.example）——构成 hard_time blocking 冲突，证据 band low、状态 contested；右侧是冲突编号、五个报告文件与可选的解决路径">
+</picture>
+
 # dsh-sherlock
 
+**时序证据工作台：一个日期从来不是一个事实。**
+
+*公开 URL → 冻结快照 + SHA-256 → 带五条时钟与 T-S-C-E 向量的原始日期断言 → 确定性的冲突、缺口与覆盖范围 → 本地报告。它报告证据支持什么、哪里冲突，从不给出真/假裁决。它不建站、不托管服务、不查人。*
+
+[English](README.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
+
 [![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0%20AND%20MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D24.9-brightgreen.svg)]()
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的**时序证据工作台**；早期用户名检查工具保留为 legacy。
-
-它**不建站、不托管服务、不查人**。输入公开 URL（可选 DSH 搜索结果），在本地冻结快照，分离同一条日期上的不同时间角色，重建可复核的时间线，输出冲突、缺口和覆盖范围。它不会给出“真/假”裁决。
+</div>
 
 > 名称保留用于连续性；产品方向是时序证据，而不是用户名枚举。
+
+---
 
 ## 工作流
 
@@ -44,6 +59,14 @@
 ### 覆盖声明
 
 负向结论必须带覆盖声明：查了什么、在哪、时间窗/语言/域名范围、什么时候查、命中多少、哪些不可达。`未检查`、`已检查未发现`、`无法访问`、`证据不足`是四种不同状态。
+
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-sherlock-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-sherlock-flow-v5-light.svg" width="100%" alt="dsh-sherlock 结构图：公开 URL 冻结为带 SHA-256 的快照，其声明的日期成为携带五条时钟与 T-S-C-E 向量的原始断言，再由确定性分析推导冲突、缺口与覆盖范围，最后写出本地报告；工具从不替用户选定日期">
+</picture>
+
+*结构：抓取 → 断言 → 分析；`conflicts[]`、`gaps[]` 与 `coverage` 全部由确定性计算得出，五条时钟绝不压成一个“日期”。图内只有工具名与字段名，五语共用同一张结构图。*
 
 ## 快速开始
 
@@ -166,6 +189,11 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 上游数据 MIT；插件代码 Apache-2.0。见 `LICENSE`、`NOTICE`、`data/SHERLOCK-LICENSE`。
 
 ## 开发
+
+![dsh-sherlock 时序基准：100 条合成事件的真实本地运行（不联网）——1 万次日期解析、100 个事件写入并分析、100 条时间线、200 个缺口与 5 个报告文件](docs/assets/dsh-sherlock-demo.gif)
+
+*动图是 `npm run benchmark:temporal` 的真实 stdout（Node 24.22.1，不联网；2026-11-21 复跑）。耗时随机器不同；计数由 `CHRONO_BENCH_COUNT=100` 固定。*
+
 
 需要 Node 24.9+。
 
