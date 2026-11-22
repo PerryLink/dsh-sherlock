@@ -11,6 +11,8 @@
 
 *公开 URL → 冻结快照 + SHA-256 → 带五条时钟与 T-S-C-E 向量的原始日期断言 → 确定性的冲突、缺口与覆盖范围 → 本地报告。它报告证据支持什么、哪里冲突，从不给出真/假裁决。它不建站、不托管服务、不查人。*
 
+最近一次核验：DeepSeek Harness `dsh-v0.2.3-alpha.1`（2026-11-22）。
+
 [English](README.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
 
 [![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
@@ -59,7 +61,6 @@
 ### 覆盖声明
 
 负向结论必须带覆盖声明：查了什么、在哪、时间窗/语言/域名范围、什么时候查、命中多少、哪些不可达。`未检查`、`已检查未发现`、`无法访问`、`证据不足`是四种不同状态。
-
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-sherlock-flow-v5-dark.svg">
@@ -193,7 +194,6 @@ await tools.chrono_report({ case_id: c.caseId, audience: 'internal' })
 ![dsh-sherlock 时序基准：100 条合成事件的真实本地运行（不联网）——1 万次日期解析、100 个事件写入并分析、100 条时间线、200 个缺口与 5 个报告文件](docs/assets/dsh-sherlock-demo.gif)
 
 *动图是 `npm run benchmark:temporal` 的真实 stdout（Node 24.22.1，不联网；2026-11-21 复跑）。耗时随机器不同；计数由 `CHRONO_BENCH_COUNT=100` 固定。*
-
 
 需要 Node 24.9+。
 

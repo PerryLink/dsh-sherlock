@@ -11,6 +11,8 @@
 
 *URLs → snapshots congelados + SHA-256 → afirmações de data em bruto com cinco relógios e um vetor T-S-C-E → conflitos, lacunas e cobertura determinísticos → um relatório local. Ele informa o que a evidência sustenta e o que entra em conflito; nunca emite um veredicto de verdadeiro/falso. Não constrói nem hospeda nenhum site e não procura pessoas.*
 
+Última verificação: DeepSeek Harness `dsh-v0.2.3-alpha.1` (2026-11-22).
+
 [English](README.md) · [简体中文](README.zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
 
 [![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
@@ -65,7 +67,6 @@ O relatório mostra o vetor e uma banda (`low`/`medium`/`high`), não uma única
 ### Declaração de cobertura
 
 Uma conclusão negativa exige uma declaração de cobertura: o que foi consultado, onde, em que janela/idioma/escopo de domínio, quando, quantos resultados e o que estava inacessível. `not checked`, `checked and not found`, `unreachable` e `insufficient evidence` são distintos.
-
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-sherlock-flow-v5-dark.svg">
@@ -219,7 +220,6 @@ Os dados upstream são licenciados sob MIT; veja `data/SHERLOCK-LICENSE` e `NOTI
 ![dsh-sherlock benchmark temporal: uma execução local real sem rede sobre 100 eventos sintéticos — 10 000 análises de datas, 100 eventos adicionados e analisados, uma linha do tempo de 100 entradas, 200 lacunas e 5 arquivos de relatório](docs/assets/dsh-sherlock-demo.gif)
 
 *Animado: a saída real por stdout de `npm run benchmark:temporal` no Node 24.22.1 sem rede (reexecutado em 2026-11-21). Os tempos variam conforme a máquina; as contagens são fixadas por `CHRONO_BENCH_COUNT=100`.*
-
 
 Requer Node 24.9+.
 

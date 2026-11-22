@@ -11,6 +11,8 @@
 
 *URLs → फ़्रीज़ किए गए स्नैपशॉट + SHA-256 → पाँच घड़ियों और T-S-C-E वेक्टर वाले मूल तारीख़ दावे → नियतात्मक विरोध, अंतराल और कवरेज → एक स्थानीय रिपोर्ट। यह बताता है कि एविडेंस किस बात का समर्थन करता है और कहाँ विरोध है; यह कभी सही/ग़लत का निर्णय नहीं देता। यह कोई वेबसाइट नहीं बनाता या होस्ट नहीं करता और लोगों को नहीं खोजता।*
 
+अंतिम सत्यापन: DeepSeek Harness `dsh-v0.2.3-alpha.1` (2026-11-22).
+
 [English](README.md) · [简体中文](README.zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
 
 [![CI](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml/badge.svg)](https://github.com/PerryLink/dsh-sherlock/actions/workflows/ci.yml)
@@ -65,7 +67,6 @@
 ### कवरेज वक्तव्य
 
 नकारात्मक निष्कर्ष के लिए कवरेज वक्तव्य आवश्यक है: क्या खोजा गया, कहाँ, किस समय-खिड़की/भाषा/डोमेन दायरे में, कब, कितने परिणाम, और क्या पहुँच से बाहर था। `not checked`, `checked and not found`, `unreachable` और `insufficient evidence` अलग-अलग हैं।
-
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-sherlock-flow-v5-dark.svg">
@@ -219,7 +220,6 @@ cases/<caseId>/
 ![dsh-sherlock टेम्पोरल बेंचमार्क: 100 सिंथेटिक घटनाओं पर एक असली स्थानीय, बिना-नेटवर्क रन — 10 000 तारीख़ पार्स, 100 घटनाएँ जोड़ी और विश्लेषित, 100-प्रविष्टि टाइमलाइन, 200 अंतराल और 5 रिपोर्ट फ़ाइलें](docs/assets/dsh-sherlock-demo.gif)
 
 *एनिमेटेड: `npm run benchmark:temporal` का असली stdout, Node 24.22.1 पर बिना नेटवर्क (2026-11-21 को दोबारा चलाया गया)। समय मशीन के अनुसार बदलता है; गणनाएँ `CHRONO_BENCH_COUNT=100` से तय हैं।*
-
 
 Node 24.9+ आवश्यक है।
 
